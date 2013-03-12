@@ -41,15 +41,14 @@ import android.widget.ImageView;
 import android.widget.Toast;
 import com.aviary.android.feather.Constants;
 import com.aviary.android.feather.FeatherActivity;
-import com.aviary.android.feather.library.media.ExifInterfaceWrapper;
-import com.aviary.android.feather.library.moa.MoaHD;
-import com.aviary.android.feather.library.moa.MoaHD.Error;
+import com.aviary.android.feather.headless.media.ExifInterfaceWrapper;
+import com.aviary.android.feather.headless.moa.MoaHD;
+import com.aviary.android.feather.headless.utils.IOUtils;
+import com.aviary.android.feather.headless.utils.StringUtils;
 import com.aviary.android.feather.library.providers.FeatherContentProvider;
 import com.aviary.android.feather.library.providers.FeatherContentProvider.ActionsDbColumns.Action;
 import com.aviary.android.feather.library.utils.DecodeUtils;
-import com.aviary.android.feather.library.utils.IOUtils;
 import com.aviary.android.feather.library.utils.ImageLoader.ImageSizes;
-import com.aviary.android.feather.library.utils.StringUtils;
 import com.aviary.android.feather.library.utils.SystemUtils;
 
 public class MainActivity extends Activity {
@@ -730,7 +729,7 @@ public class MainActivity extends Activity {
 		// Now we need to fetch the session information from the content provider
 		FeatherContentProvider.SessionsDbColumns.Session session = null;
 
-		Uri sessionUri = FeatherContentProvider.SessionsDbColumns.getContentUri( session_name );
+		Uri sessionUri = FeatherContentProvider.SessionsDbColumns.getContentUri( this, session_name );
 
 		// this query will return a cursor with the informations about the given session
 		Cursor cursor = getContentResolver().query( sessionUri, null, null, null, null );
@@ -750,7 +749,7 @@ public class MainActivity extends Activity {
 
 			// Now, based on the session information we need to retrieve
 			// the list of actions to apply to the hi-res image
-			Uri actionsUri = FeatherContentProvider.ActionsDbColumns.getContentUri( session.session );
+			Uri actionsUri = FeatherContentProvider.ActionsDbColumns.getContentUri( this, session.session );
 
 			// this query will return the list of actions performed on the original file, during the FeatherActivity session.
 			// Now you can apply each action to the hi-res image to replicate the same result on the bigger image
@@ -780,7 +779,7 @@ public class MainActivity extends Activity {
 	 * @param session_id
 	 */
 	private void deleteSession( final String session_id ) {
-		Uri uri = FeatherContentProvider.SessionsDbColumns.getContentUri( session_id );
+		Uri uri = FeatherContentProvider.SessionsDbColumns.getContentUri( this, session_id );
 		getContentResolver().delete( uri, null, null );
 	}
 
@@ -845,10 +844,10 @@ public class MainActivity extends Activity {
 		}
 
 		@Override
-		protected Error doInBackground( Cursor... params ) {
+		protected MoaHD.Error doInBackground( Cursor... params ) {
 			Cursor cursor = params[0];
 
-			MoaHD.Error result = Error.UnknownError;
+			MoaHD.Error result = MoaHD.Error.UnknownError;
 
 			if ( null != cursor ) {
 
@@ -860,7 +859,7 @@ public class MainActivity extends Activity {
 				Log.d( LOG_TAG, "moa.load: " + result.name() );
 
 				// if image is loaded
-				if ( result == Error.NoError ) {
+				if ( result == MoaHD.Error.NoError ) {
 
 					final int total_actions = cursor.getCount();
 					
@@ -899,7 +898,7 @@ public class MainActivity extends Activity {
 					result = moa.save( dstPath_ );
 					Log.d( LOG_TAG, "moa.save: " + result.name() );
 
-					if ( result != Error.NoError ) {
+					if ( result != MoaHD.Error.NoError ) {
 						Log.e( LOG_TAG, "failed to save the image to " + dstPath_ );
 					}
 
@@ -967,7 +966,7 @@ public class MainActivity extends Activity {
 			}
 
 			// in case we had an error...
-			if ( result != Error.NoError ) {
+			if ( result != MoaHD.Error.NoError ) {
 				Toast.makeText( MainActivity.this, "There was an error: " + result.name(), Toast.LENGTH_SHORT ).show();
 				return;
 			}
@@ -1000,8 +999,8 @@ public class MainActivity extends Activity {
 			deleteSession( session_ );
 		}
 
-		private Error loadImage( MoaHD moa ) {
-			MoaHD.Error result = Error.UnknownError;
+		private MoaHD.Error loadImage( MoaHD moa ) {
+			MoaHD.Error result = MoaHD.Error.UnknownError;
 			final String srcPath = IOUtils.getRealFilePath( MainActivity.this, uri_ );
 			if ( srcPath != null ) {
 
@@ -1020,14 +1019,14 @@ public class MainActivity extends Activity {
 					try {
 						stream = getContentResolver().openInputStream( uri_ );
 					} catch ( Exception e ) {
-						result = Error.FileNotFoundError;
+						result = MoaHD.Error.FileNotFoundError;
 						e.printStackTrace();
 					}
 					if ( stream != null ) {
 						try {
 							result = moa.load( stream );
 						} catch ( Exception e ) {
-							result = Error.DecodeError;
+							result = MoaHD.Error.DecodeError;
 						}
 					} else {
 						Log.e( LOG_TAG, "stream is null!" );
@@ -1038,7 +1037,7 @@ public class MainActivity extends Activity {
 						fd = getContentResolver().openFileDescriptor( uri_, "r" );
 					} catch ( FileNotFoundException e ) {
 						e.printStackTrace();
-						result = Error.FileNotFoundError;
+						result = MoaHD.Error.FileNotFoundError;
 					}
 
 					if ( null != fd ) {
