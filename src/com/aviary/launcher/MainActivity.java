@@ -729,7 +729,7 @@ public class MainActivity extends Activity {
 		// Now we need to fetch the session information from the content provider
 		FeatherContentProvider.SessionsDbColumns.Session session = null;
 
-		Uri sessionUri = FeatherContentProvider.SessionsDbColumns.getContentUri( session_name );
+		Uri sessionUri = FeatherContentProvider.SessionsDbColumns.getContentUri( this, session_name );
 
 		// this query will return a cursor with the informations about the given session
 		Cursor cursor = getContentResolver().query( sessionUri, null, null, null, null );
@@ -749,7 +749,7 @@ public class MainActivity extends Activity {
 
 			// Now, based on the session information we need to retrieve
 			// the list of actions to apply to the hi-res image
-			Uri actionsUri = FeatherContentProvider.ActionsDbColumns.getContentUri( session.session );
+			Uri actionsUri = FeatherContentProvider.ActionsDbColumns.getContentUri( this, session.session );
 
 			// this query will return the list of actions performed on the original file, during the FeatherActivity session.
 			// Now you can apply each action to the hi-res image to replicate the same result on the bigger image
@@ -779,7 +779,7 @@ public class MainActivity extends Activity {
 	 * @param session_id
 	 */
 	private void deleteSession( final String session_id ) {
-		Uri uri = FeatherContentProvider.SessionsDbColumns.getContentUri( session_id );
+		Uri uri = FeatherContentProvider.SessionsDbColumns.getContentUri( this, session_id );
 		getContentResolver().delete( uri, null, null );
 	}
 
