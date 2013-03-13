@@ -63,7 +63,8 @@
             android:hardwareAccelerated="true"
             android:largeHeap="true"
             android:screenOrientation="unspecified"
-            android:theme="@style/FeatherDefaultTheme.Custom" />
+            android:theme="@style/FeatherDefaultTheme.Custom"
+            android:process=":standalone" />
         
         <!-- image info activity -->
         <activity 
@@ -92,7 +93,8 @@
         <provider 
             android:name="com.aviary.android.feather.library.providers.FeatherContentProvider"
             android:exported="false"
-            android:authorities="com.aviary.launcher.HiResProvider">
+            android:authorities="com.aviary.launcher.HiResProvider"
+            android:process=":standalone">
         </provider>
         
     </application>
