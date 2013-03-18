@@ -43,7 +43,7 @@ import android.widget.Toast;
 
 import com.aviary.android.feather.Constants;
 import com.aviary.android.feather.FeatherActivity;
-import com.aviary.android.feather.headless.AviaryEffect;
+import com.aviary.android.feather.headless.filters.NativeFilterProxy;
 import com.aviary.android.feather.headless.filters.NativeFilterProxy.AviaryInitError;
 import com.aviary.android.feather.headless.media.ExifInterfaceWrapper;
 import com.aviary.android.feather.headless.moa.MoaHD;
@@ -866,7 +866,7 @@ public class MainActivity extends Activity {
 				// If in your manifest you're using a different process for the FeatherActivity Activity
 				// then you *MUST* call this method before using any of the MoaHD methods, otherwise
 				// you will receive a java exception
-				AviaryInitError init_error = AviaryEffect.init( getBaseContext(), API_KEY );
+				AviaryInitError init_error = NativeFilterProxy.init( getBaseContext(), API_KEY );
 				
 				if( init_error != AviaryInitError.NoError ) {
 					Log.d( LOG_TAG, "init error: " + init_error );
