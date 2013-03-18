@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Date;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -39,8 +40,11 @@ import android.view.View.OnLongClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
+
 import com.aviary.android.feather.Constants;
 import com.aviary.android.feather.FeatherActivity;
+import com.aviary.android.feather.headless.AviaryEffect;
+import com.aviary.android.feather.headless.filters.NativeFilterProxy.AviaryInitError;
 import com.aviary.android.feather.headless.media.ExifInterfaceWrapper;
 import com.aviary.android.feather.headless.moa.MoaHD;
 import com.aviary.android.feather.headless.utils.IOUtils;
@@ -67,7 +71,7 @@ public class MainActivity extends Activity {
 	private static final int ACTION_REQUEST_FEATHER = 100;
 	private static final int EXTERNAL_STORAGE_UNAVAILABLE = 1;
 
-	public static final String LOG_TAG = "feather-launcher";
+	public static final String LOG_TAG = "aviary-launcher";
 
 	/** apikey is required http://developers.aviary.com/ */
 	private static final String API_KEY = "xxxxx";
@@ -89,13 +93,6 @@ public class MainActivity extends Activity {
 
 	@Override
 	protected void onCreate( Bundle savedInstanceState ) {
-		Log.i( LOG_TAG, "device: " + android.os.Build.DEVICE );
-		Log.i( LOG_TAG, "cpu: " + android.os.Build.CPU_ABI );
-		Log.i( LOG_TAG, "cpu2: " + android.os.Build.CPU_ABI2 );
-		Log.i( LOG_TAG, "manufacter: " + android.os.Build.MANUFACTURER );
-		Log.i( LOG_TAG, "model: " + android.os.Build.MODEL );
-		Log.i( LOG_TAG, "product: " + android.os.Build.PRODUCT );
-
 		Log.i( LOG_TAG, "onCreate" );
 		super.onCreate( savedInstanceState );
 		setContentView( R.layout.main );
@@ -442,7 +439,8 @@ public class MainActivity extends Activity {
 	}
 
 	/**
-	 * We need to notify the MediaScanner when a new file is created. In this way all the gallery applications will be notified too.
+	 * We need to notify the MediaScanner when a new file is created. 
+	 * In this way all the gallery applications will be notified too.
 	 * 
 	 * @param file
 	 */
@@ -470,6 +468,9 @@ public class MainActivity extends Activity {
 				if ( c.moveToPosition( position ) ) {
 					String data = c.getString( c.getColumnIndex( Images.ImageColumns.DATA ) );
 					long id = c.getLong( c.getColumnIndex( Images.ImageColumns._ID ) );
+					
+					// you can pass to the Aviary-SDK an uri with a "content://" scheme
+					// or an abolute file path like "file:///mnt/..." or just "/mnt/..."
 					
 					// using the "content:/" style uri
 					// uri = Uri.withAppendedPath( Images.Media.EXTERNAL_CONTENT_URI, String.valueOf( id ) );
@@ -536,6 +537,8 @@ public class MainActivity extends Activity {
 
 		// create a temporary file where to store the resulting image
 		File file = getNextFileName();
+		
+		
 		if ( null != file ) {
 			mOutputFilePath = file.getAbsolutePath();
 		} else {
@@ -543,12 +546,11 @@ public class MainActivity extends Activity {
 					.show();
 			return;
 		}
-
+		
 		// Create the intent needed to start feather
 		Intent newIntent = new Intent( this, FeatherActivity.class );
 
-		// === INPUT IMAGE URI ===
-		// Mandatory
+		// === INPUT IMAGE URI ( MANDATORY )===
 		// Set the source image uri
 		newIntent.setData( uri );
 
@@ -594,22 +596,29 @@ public class MainActivity extends Activity {
 		// you can omit this if you just want to display the default tools
 
 		/*
-		 * newIntent.putExtra( "tools-list", new String[] { FilterLoaderFactory.Filters.ENHANCE.name(),
-		 * FilterLoaderFactory.Filters.EFFECTS.name(), FilterLoaderFactory.Filters.STICKERS.name(),
-		 * FilterLoaderFactory.Filters.ADJUST.name(), FilterLoaderFactory.Filters.CROP.name(),
-		 * FilterLoaderFactory.Filters.BRIGHTNESS.name(), FilterLoaderFactory.Filters.CONTRAST.name(),
-		 * FilterLoaderFactory.Filters.SATURATION.name(), FilterLoaderFactory.Filters.SHARPNESS.name(),
-		 * FilterLoaderFactory.Filters.DRAWING.name(), FilterLoaderFactory.Filters.TEXT.name(),
-		 * FilterLoaderFactory.Filters.MEME.name(), FilterLoaderFactory.Filters.RED_EYE.name(),
-		 * FilterLoaderFactory.Filters.WHITEN.name(), FilterLoaderFactory.Filters.BLEMISH.name(),
-		 * FilterLoaderFactory.Filters.COLORTEMP.name(), } );
+		 * newIntent.putExtra( "tools-list", new String[] { 
+		 * FilterLoaderFactory.Filters.ENHANCE.name(),
+		 * FilterLoaderFactory.Filters.EFFECTS.name(), 
+		 * FilterLoaderFactory.Filters.BORDERS.name(), 
+		 * FilterLoaderFactory.Filters.STICKERS.name(),
+		 * FilterLoaderFactory.Filters.CROP.name(), 
+		 * FilterLoaderFactory.Filters.TILT_SHIFT.name(),
+		 * FilterLoaderFactory.Filters.ADJUST.name(), 
+		 * FilterLoaderFactory.Filters.BRIGHTNESS.name(), 
+		 * FilterLoaderFactory.Filters.CONTRAST.name(), 
+		 * FilterLoaderFactory.Filters.SATURATION.name(), 
+		 * FilterLoaderFactory.Filters.COLORTEMP.name(),
+		 * FilterLoaderFactory.Filters.SHARPNESS.name(), 
+		 * FilterLoaderFactory.Filters.COLOR_SPLASH.name(),
+		 * FilterLoaderFactory.Filters.DRAWING.name(), 
+		 * FilterLoaderFactory.Filters.TEXT.name(), 
+		 * FilterLoaderFactory.Filters.RED_EYE.name(), 
+		 * FilterLoaderFactory.Filters.WHITEN.name(), 
+		 * FilterLoaderFactory.Filters.BLEMISH.name(),
+		 * FilterLoaderFactory.Filters.MEME.name(),
+		 * } );
 		 */
 
-		// === INLINE BITMAP RESULT ===
-		// Optional.
-		// You want the result bitmap inline. 
-		// This will work only with small bitmaps
-		// newIntent.putExtra( Constants.EXTRA_RETURN_DATA, true );
 
 		// === EXIT ALERT ===
 		// Optional
@@ -623,7 +632,7 @@ public class MainActivity extends Activity {
 		// to the final user. But if you want to disable this feature, just pass
 		// any value with the key "tools-vibration-disabled" in the calling intent.
 		// This option has been added to version 2.1.5 of the Aviary SDK
-		newIntent.putExtra( Constants.EXTRA_TOOLS_DISABLE_VIBRATION, true );
+		// newIntent.putExtra( Constants.EXTRA_TOOLS_DISABLE_VIBRATION, true );
 
 		// === MAX SIZE ===
 		// Optional
@@ -635,15 +644,17 @@ public class MainActivity extends Activity {
 		// image for the preview
 		final DisplayMetrics metrics = new DisplayMetrics();
 		getWindowManager().getDefaultDisplay().getMetrics( metrics );
-		int max_size = Math.min( metrics.widthPixels, metrics.heightPixels );		
-		max_size = (int) ( (double) max_size / 0.8 );
+		int max_size = Math.max( metrics.widthPixels, metrics.heightPixels );
+		max_size = (int) ( (float) max_size / 1.2f );
 		Log.d( LOG_TAG, "max-image-size: " + max_size );
 		newIntent.putExtra( Constants.EXTRA_MAX_IMAGE_SIZE, max_size );
 
 		// === HI-RES ===
 		// You need to generate a new session id key to pass to Aviary feather
 		// this is the key used to operate with the hi-res image ( and must be unique for every new instance of Feather )
-		// The session-id key must be 64 char length
+		// The session-id key must be 64 char length.
+		// In your "onActivityResult" method, if the resultCode is RESULT_OK, the returned
+		// bundle data will also contain the "session" key/value you are passing here.
 		mSessionId = StringUtils.getSha256( System.currentTimeMillis() + API_KEY );
 		Log.d( LOG_TAG, "session: " + mSessionId + ", size: " + mSessionId.length() );
 		newIntent.putExtra( Constants.EXTRA_OUTPUT_HIRES_SESSION_ID, mSessionId );
@@ -851,6 +862,17 @@ public class MainActivity extends Activity {
 
 			if ( null != cursor ) {
 
+				// IMPORTANT NOTE:
+				// If in your manifest you're using a different process for the FeatherActivity Activity
+				// then you *MUST* call this method before using any of the MoaHD methods, otherwise
+				// you will receive a java exception
+				AviaryInitError init_error = AviaryEffect.init( getBaseContext(), API_KEY );
+				
+				if( init_error != AviaryInitError.NoError ) {
+					Log.d( LOG_TAG, "init error: " + init_error );
+					return MoaHD.Error.UnknownError;
+				}
+				
 				// Initialize the class to perform HD operations
 				MoaHD moa = new MoaHD();
 

@@ -12,6 +12,13 @@
 		<item name="bottombarFont">fonts/BigCaslon.ttf</item>
 	-->
 	
+		<item name="fontFamilyLight">fonts/Roboto-Light.ttf</item>
+	    <item name="fontFamilyMedium">fonts/Roboto-Regular.ttf</item>
+	    <item name="fontFamilyBold">fonts/Roboto-Regular.ttf</item>
+	    <item name="toolbarTitleFontFamily">fonts/Roboto-Light.ttf</item>
+	    <item name="toolbarButtonFontFamily">fonts/Roboto-Regular.ttf</item>
+	    <item name="thumbTextFontFamily">fonts/Roboto-Light.ttf</item>
+	
 	</style>
 	
 	

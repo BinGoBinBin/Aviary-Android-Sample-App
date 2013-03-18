@@ -25,21 +25,31 @@
 -printusage unused.txt 
 -printmapping mapping.txt 
 
--keep class com.aviary.android.feather.library.moa.Moa
--keep class com.aviary.android.feather.library.moa.MoaResult
--keep class com.aviary.android.feather.library.moa.MoaHD
--keep class com.aviary.android.feather.library.filters.NativeFilterProxy
--keep class com.aviary.android.feather.library.services.PluginService
--keep class com.aviary.android.feather.library.utils.CameraUtils
--keep class com.aviary.android.feather.opengl.AviaryGLSurfaceView
--keep class com.aviary.android.feather.library.opengl.GLUtils
--keep class com.aviary.android.feather.library.media.ExifInterfaceWrapper
--keep class com.aviary.android.feather.widget.IFlingRunnable
--keep interface com.aviary.android.feather.library.services.EffectContext
+-keep class com.aviary.android.feather.headless.AviaryEffect
+-keep class com.aviary.android.feather.headless.media.ExifInterfaceWrapper
+-keep class com.aviary.android.feather.headless.moa.Moa
+-keep class com.aviary.android.feather.headless.moa.MoaResult
+-keep class com.aviary.android.feather.headless.moa.MoaHD
+-keep class com.aviary.android.feather.headless.filters.NativeFilterProxy
+-keep class com.aviary.android.feather.headless.utils.CameraUtils
+-keep class com.aviary.android.feather.headless.gl.GLUtils
 
+-keep class com.aviary.android.feather.opengl.AviaryGLSurfaceView
+-keep class com.aviary.android.feather.widget.IFlingRunnable
+-keep class com.aviary.android.feather.library.services.EffectContextService
+
+-keep interface com.aviary.android.feather.library.services.EffectContext
+-keep interface com.aviary.android.feather.headless.filters.IFilter
+
+-keep class * extends com.aviary.android.feather.headless.filters.IFilter
+-keep class * extends com.aviary.android.feather.headless.filters.INativeFilter
+-keep class * extends com.aviary.android.feather.library.services.EffectContext
 -keep class * extends com.aviary.android.feather.library.services.EffectContextService
 -keep class * extends com.aviary.android.feather.widget.IFlingRunnable
 -keep class * implements java.lang.Runnable
+
+-keep class it.sephiroth.android.library.imagezoom.ImageViewTouchBase
+-keep class * extends it.sephiroth.android.library.imagezoom.ImageViewTouchBase
 
 -keepclasseswithmembers class * {
 	protected <init>( com.aviary.android.feather.library.services.EffectContext );
@@ -49,16 +59,22 @@
 	public <init>( com.aviary.android.feather.library.services.EffectContext );
 }
 
--keepclassmembers class com.aviary.android.feather.library.moa.MoaResult {
+# This class should not be obfuscated at all
+-keepclassmembers class com.aviary.android.feather.headless.moa.MoaResult {
 	public java.lang.String inputString;
 	public android.graphics.Bitmap inputBitmap;
 	public java.lang.String outputString;
 	public android.graphics.Bitmap outputBitmap;
 	public volatile int active;
 	public void cancel();
+	public synchronized void execute();
 }
 
+# Keep all classes with a native method
+
 -keepclassmembers class * {
+   public static native <methods>;
+   private static native <methods>;
    static native <methods>;
    private native <methods>;
    native <methods>;
