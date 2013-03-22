@@ -43,8 +43,9 @@ import android.widget.Toast;
 
 import com.aviary.android.feather.Constants;
 import com.aviary.android.feather.FeatherActivity;
+import com.aviary.android.feather.headless.AviaryExecutionException;
+import com.aviary.android.feather.headless.AviaryInitializationException;
 import com.aviary.android.feather.headless.filters.NativeFilterProxy;
-import com.aviary.android.feather.headless.filters.NativeFilterProxy.AviaryInitError;
 import com.aviary.android.feather.headless.media.ExifInterfaceWrapper;
 import com.aviary.android.feather.headless.moa.MoaHD;
 import com.aviary.android.feather.headless.utils.IOUtils;
@@ -800,7 +801,7 @@ public class MainActivity extends Activity {
 	 * @author alessandro
 	 * 
 	 */
-	private class HDAsyncTask extends AsyncTask<Cursor, Integer, MoaHD.Error> {
+	private class HDAsyncTask extends AsyncTask<Cursor, Integer, String> {
 
 		Uri uri_;
 		String dstPath_;
@@ -855,10 +856,8 @@ public class MainActivity extends Activity {
 		}
 
 		@Override
-		protected MoaHD.Error doInBackground( Cursor... params ) {
+		protected String doInBackground( Cursor... params ) {
 			Cursor cursor = params[0];
-
-			MoaHD.Error result = MoaHD.Error.UnknownError;
 
 			if ( null != cursor ) {
 
@@ -866,22 +865,25 @@ public class MainActivity extends Activity {
 				// If in your manifest you're using a different process for the FeatherActivity Activity
 				// then you *MUST* call this method before using any of the MoaHD methods, otherwise
 				// you will receive a java exception
-				AviaryInitError init_error = NativeFilterProxy.init( getBaseContext(), API_KEY );
-				
-				if( init_error != AviaryInitError.NoError ) {
-					Log.d( LOG_TAG, "init error: " + init_error );
-					return MoaHD.Error.UnknownError;
+				try {
+					NativeFilterProxy.init( getBaseContext(), API_KEY );
+				} catch ( AviaryInitializationException e ) {
+					return e.getMessage();
 				}
+				
 				
 				// Initialize the class to perform HD operations
 				MoaHD moa = new MoaHD();
-
-				// try to load the source image
-				result = loadImage( moa );
-				Log.d( LOG_TAG, "moa.load: " + result.name() );
+				
+				boolean loaded;
+				try {
+					loaded = loadImage( moa );
+				} catch ( AviaryExecutionException e ) {
+					return e.getMessage();
+				}
 
 				// if image is loaded
-				if ( result == MoaHD.Error.NoError ) {
+				if ( loaded ) {
 
 					final int total_actions = cursor.getCount();
 					
@@ -917,11 +919,13 @@ public class MainActivity extends Activity {
 					// at the end of all the operations we need to save
 					// the modified image to a new file
 					publishProgress( -1, -1 );
-					result = moa.save( dstPath_ );
-					Log.d( LOG_TAG, "moa.save: " + result.name() );
-
-					if ( result != MoaHD.Error.NoError ) {
-						Log.e( LOG_TAG, "failed to save the image to " + dstPath_ );
+					
+					try {
+						moa.save( dstPath_ );
+					} catch ( AviaryExecutionException e ) {
+						return e.getMessage();
+					} finally {
+						moa.dispose();
 					}
 
 					// ok, now we can save the source image EXIF tags
@@ -931,20 +935,27 @@ public class MainActivity extends Activity {
 					}
 
 				} else {
-					Log.e( LOG_TAG, "Failed to load file" );
+					return "Failed to load the image";
 				}
+				
 				cursor.close();
 
 				// and unload the current bitmap. Note that you *MUST* call this method to free the memory allocated with the load
 				// method
-				result = moa.unload();
-				Log.d( LOG_TAG, "moa.unload: " + result.name() );
-
-				// finally dispose the moahd instance
-				moa.dispose();
+				
+				if( moa.isLoaded() ) {
+					try {
+						moa.unload();
+					} catch ( AviaryExecutionException e ) {}
+				}
+				
+				if( !moa.isDisposed() ) {
+					// finally dispose the moahd instance
+					moa.dispose();
+				}
 			}
 
-			return result;
+			return null;
 		}
 
 		/**
@@ -980,16 +991,16 @@ public class MainActivity extends Activity {
 		}
 
 		@Override
-		protected void onPostExecute( MoaHD.Error result ) {
-			super.onPostExecute( result );
+		protected void onPostExecute( String errorString ) {
+			super.onPostExecute( errorString );
 
 			if ( progress_.getWindow() != null ) {
 				progress_.dismiss();
 			}
 
 			// in case we had an error...
-			if ( result != MoaHD.Error.NoError ) {
-				Toast.makeText( MainActivity.this, "There was an error: " + result.name(), Toast.LENGTH_SHORT ).show();
+			if ( null != errorString ) {
+				Toast.makeText( MainActivity.this, "There was an error: " + errorString, Toast.LENGTH_SHORT ).show();
 				return;
 			}
 
@@ -1021,8 +1032,7 @@ public class MainActivity extends Activity {
 			deleteSession( session_ );
 		}
 
-		private MoaHD.Error loadImage( MoaHD moa ) {
-			MoaHD.Error result = MoaHD.Error.UnknownError;
+		private boolean loadImage( MoaHD moa ) throws AviaryExecutionException {
 			final String srcPath = IOUtils.getRealFilePath( MainActivity.this, uri_ );
 			if ( srcPath != null ) {
 
@@ -1033,41 +1043,38 @@ public class MainActivity extends Activity {
 				} catch ( IOException e ) {
 					e.printStackTrace();
 				}
-				result = moa.load( srcPath );
+				moa.load( srcPath );
+				return true;
+				
 			} else {
 
 				if ( SystemUtils.isHoneyComb() ) {
 					InputStream stream = null;
 					try {
 						stream = getContentResolver().openInputStream( uri_ );
-					} catch ( Exception e ) {
-						result = MoaHD.Error.FileNotFoundError;
+					} catch ( IOException e ) {
+						// stream is not valid
 						e.printStackTrace();
+						return false;
 					}
-					if ( stream != null ) {
-						try {
-							result = moa.load( stream );
-						} catch ( Exception e ) {
-							result = MoaHD.Error.DecodeError;
-						}
-					} else {
-						Log.e( LOG_TAG, "stream is null!" );
-					}
+					
+					moa.load( stream );
+					return true;
+					
 				} else {
 					ParcelFileDescriptor fd = null;
 					try {
 						fd = getContentResolver().openFileDescriptor( uri_, "r" );
 					} catch ( FileNotFoundException e ) {
+						// file not found
 						e.printStackTrace();
-						result = MoaHD.Error.FileNotFoundError;
+						return false;
 					}
-
-					if ( null != fd ) {
-						result = moa.load( fd.getFileDescriptor() );
-					}
+					
+					moa.load( fd.getFileDescriptor() );
+					return true;
 				}
 			}
-			return result;
 		}
 	}
 
