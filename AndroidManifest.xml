@@ -76,9 +76,9 @@
 
         <!-- Aviary Receiver must be defined here. gets the newly installed plugins -->
         <receiver
-            android:name="com.aviary.android.feather.receivers.FeatherSystemReceiver"
+            android:name="com.aviary.android.feather.library.receivers.AviarySystemReceiver"
             android:exported="true"
-            android:process=":feather_system_receiver" >
+            android:process=":aviary_sample_system_receiver" >
             <intent-filter>
                 <action android:name="android.intent.action.PACKAGE_ADDED" />
                 <action android:name="android.intent.action.PACKAGE_REMOVED" />
