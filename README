@@ -3,6 +3,11 @@ This project has the goal to give a concrete example on how to use the **Aviary 
 
 Before download this project make sure to download the Aviary SDK: https://github.com/AviaryInc/Mobile-Feather-SDK-for-Android.
 
+=== CHANGES IN VERSION 82 ===
+
+The old FeatherSystemReceiver has been moved and renamed. 
+Now it's `com.aviary.android.feather.library.receivers.AviarySystemReceiver`. You need to update your AndroidManifest.xml
+
 
 === IMPORTANT CHANGE IN VERSION 74 ===
 
