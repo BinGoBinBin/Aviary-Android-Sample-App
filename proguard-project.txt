@@ -45,7 +45,7 @@
 -keep class * extends com.aviary.android.feather.headless.filters.INativeFilter
 -keep class * extends com.aviary.android.feather.library.services.EffectContext
 -keep class * extends com.aviary.android.feather.library.services.EffectContextService
--keep class * extends com.aviary.android.feather.widget.IFlingRunnable
+-keep class * extends com.aviary.android.feather.widget.IFlingRunnable { *; }
 -keep class * implements java.lang.Runnable
 
 -keep class it.sephiroth.android.library.imagezoom.ImageViewTouchBase

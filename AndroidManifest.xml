@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.aviary.launcher"
-    android:versionCode="71"
-    android:versionName="2.4.1" >
+    android:versionCode="90"
+    android:versionName="2.5.0" >
 
+    <!-- 
+    minimum android sdk version supported = 9
+    target android sdk version = 17
+     -->
     <uses-sdk
-        android:minSdkVersion="8"
+        android:minSdkVersion="9"
         android:targetSdkVersion="17" />
 
     <!-- REQUIRED PERMISSIONS -->
@@ -25,7 +29,7 @@
             android:name=".MainActivity"
             android:label="@string/app_name"
             android:screenOrientation="unspecified"
-            android:theme="@android:style/Theme.Black.NoTitleBar" >
+            android:theme="@style/BaseTheme.Impl" >
 
             <!-- required field for launching application from the app list -->
             <intent-filter>
@@ -63,7 +67,7 @@
             android:hardwareAccelerated="true"
             android:largeHeap="true"
             android:screenOrientation="unspecified"
-            android:theme="@style/FeatherDefaultTheme.Custom"
+            android:theme="@style/AviaryTheme.Custom"
             android:process=":standalone" />
         
         <!-- image info activity -->
@@ -72,7 +76,7 @@
             android:label="@string/image_details"
             android:noHistory="true"
             android:launchMode="singleTop"
-            android:theme="@style/FeatherDefaultTheme.Dialog" />        
+            android:theme="@style/AviaryTheme.Custom.Dialog" />        
 
         <!-- Aviary Receiver must be defined here. gets the newly installed plugins -->
         <receiver

@@ -41,7 +41,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.aviary.android.feather.Constants;
 import com.aviary.android.feather.FeatherActivity;
 import com.aviary.android.feather.headless.AviaryExecutionException;
 import com.aviary.android.feather.headless.AviaryInitializationException;
@@ -49,7 +48,9 @@ import com.aviary.android.feather.headless.filters.NativeFilterProxy;
 import com.aviary.android.feather.headless.media.ExifInterfaceWrapper;
 import com.aviary.android.feather.headless.moa.MoaHD;
 import com.aviary.android.feather.headless.utils.IOUtils;
+import com.aviary.android.feather.headless.utils.MegaPixels;
 import com.aviary.android.feather.headless.utils.StringUtils;
+import com.aviary.android.feather.library.Constants;
 import com.aviary.android.feather.library.providers.FeatherContentProvider;
 import com.aviary.android.feather.library.providers.FeatherContentProvider.ActionsDbColumns.Action;
 import com.aviary.android.feather.library.utils.DecodeUtils;
@@ -348,10 +349,23 @@ public class MainActivity extends Activity {
 					break;
 
 				case ACTION_REQUEST_FEATHER:
-
+					
+					boolean changed = true;
+					
+					if( null != data ) {
+						Bundle extra = data.getExtras();
+						if( null != extra ) {
+							changed = extra.getBoolean( Constants.EXTRA_OUT_BITMAP_CHANGED );
+						}
+					}
+					
+					if( !changed ) {
+						Log.w( LOG_TAG, "User did not modify the image, but just clicked on 'Done' button" );
+					}
+					
 					// send a notification to the media scanner
 					updateMedia( mOutputFilePath );
-
+					
 					// update the preview with the result
 					loadAsync( data.getData() );
 					onSaveCompleted( mOutputFilePath );
@@ -874,6 +888,10 @@ public class MainActivity extends Activity {
 				
 				// Initialize the class to perform HD operations
 				MoaHD moa = new MoaHD();
+				
+				// by default the maximum image size is set to 13Mp
+				
+				moa.setMaxMegaPixels( MegaPixels.Mp30 );
 				
 				boolean loaded;
 				try {
