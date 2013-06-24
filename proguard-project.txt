@@ -35,7 +35,8 @@
 -keep class com.aviary.android.feather.headless.gl.GLUtils
 
 -keep class com.aviary.android.feather.opengl.AviaryGLSurfaceView
--keep class com.aviary.android.feather.widget.IFlingRunnable
+-keep class com.aviary.android.feather.widget.ScrollerRunnable
+-keep interface com.aviary.android.feather.widget.ScrollerRunnable.ScrollableView
 -keep class com.aviary.android.feather.library.services.EffectContextService
 
 -keep interface com.aviary.android.feather.library.services.EffectContext
@@ -45,7 +46,7 @@
 -keep class * extends com.aviary.android.feather.headless.filters.INativeFilter
 -keep class * extends com.aviary.android.feather.library.services.EffectContext
 -keep class * extends com.aviary.android.feather.library.services.EffectContextService
--keep class * extends com.aviary.android.feather.widget.IFlingRunnable { *; }
+-keep class * extends com.aviary.android.feather.widget.ScrollerRunnable.ScrollableView { *; }
 -keep class * implements java.lang.Runnable
 
 -keep class it.sephiroth.android.library.imagezoom.ImageViewTouchBase

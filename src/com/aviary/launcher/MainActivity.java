@@ -355,6 +355,7 @@ public class MainActivity extends Activity {
 					if( null != data ) {
 						Bundle extra = data.getExtras();
 						if( null != extra ) {
+							// image was changed by the user?
 							changed = extra.getBoolean( Constants.EXTRA_OUT_BITMAP_CHANGED );
 						}
 					}
@@ -651,8 +652,8 @@ public class MainActivity extends Activity {
 
 		// === MAX SIZE ===
 		// Optional
-		// you can pass the maximum allowed image size, otherwise feather will determine
-		// the max size based on the device memory.
+		// you can pass the maximum allowed image size (for the preview), otherwise feather will determine
+		// the max size based on the device informations.
 		// This will not affect the hi-res image size.
 		// Here we're passing the current display size as max image size because after
 		// the execution of Aviary we're saving the HI-RES image so we don't need a big
@@ -661,7 +662,6 @@ public class MainActivity extends Activity {
 		getWindowManager().getDefaultDisplay().getMetrics( metrics );
 		int max_size = Math.max( metrics.widthPixels, metrics.heightPixels );
 		max_size = (int) ( (float) max_size / 1.2f );
-		Log.d( LOG_TAG, "max-image-size: " + max_size );
 		newIntent.putExtra( Constants.EXTRA_MAX_IMAGE_SIZE, max_size );
 
 		// === HI-RES ===
@@ -674,6 +674,20 @@ public class MainActivity extends Activity {
 		Log.d( LOG_TAG, "session: " + mSessionId + ", size: " + mSessionId.length() );
 		newIntent.putExtra( Constants.EXTRA_OUTPUT_HIRES_SESSION_ID, mSessionId );
 
+		// === NO CHANGES ==
+		// With this extra param you can tell to FeatherActivity how to manage
+		// the press on the Done button even when no real changes were made to
+		// the image.
+		// If the value is true then the image will be always saved, a RESULT_OK
+		// will be returned to your onActivityResult and the result Bundle will 
+		// contain an extra value "EXTRA_OUT_BITMAP_CHANGED" indicating if the
+		// image was changed during the session.
+		// If "false" is passed then a RESULT_CANCEL will be sent when an user will
+		// hit the 'Done' button without any modifications ( also the EXTRA_OUT_BITMAP_CHANGED
+		// extra will be sent back to the onActivityResult.
+		// By default this value is true ( even if you omit it )
+		newIntent.putExtra( Constants.EXTRA_IN_SAVE_ON_NO_CHANGES, true );
+		
 		// ..and start feather
 		startActivityForResult( newIntent, ACTION_REQUEST_FEATHER );
 	}
