@@ -903,8 +903,8 @@ public class MainActivity extends Activity {
 				// Initialize the class to perform HD operations
 				MoaHD moa = new MoaHD();
 				
-				// by default the maximum image size is set to 13Mp
-				
+				// Premium partners only: 
+				// 	by default the maximum image size for hi-res is set to 13Mp ( is fixed to 3mp for the free version of the sdk )
 				moa.setMaxMegaPixels( MegaPixels.Mp30 );
 				
 				boolean loaded;
