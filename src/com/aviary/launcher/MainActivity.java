@@ -1,5 +1,7 @@
 package com.aviary.launcher;
 
+import it.sephiroth.android.library.media.ExifInterfaceExtended;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -45,12 +47,12 @@ import com.aviary.android.feather.FeatherActivity;
 import com.aviary.android.feather.headless.AviaryExecutionException;
 import com.aviary.android.feather.headless.AviaryInitializationException;
 import com.aviary.android.feather.headless.filters.NativeFilterProxy;
-import com.aviary.android.feather.headless.media.ExifInterfaceWrapper;
 import com.aviary.android.feather.headless.moa.MoaHD;
 import com.aviary.android.feather.headless.utils.IOUtils;
 import com.aviary.android.feather.headless.utils.MegaPixels;
 import com.aviary.android.feather.headless.utils.StringUtils;
 import com.aviary.android.feather.library.Constants;
+import com.aviary.android.feather.library.MonitoredActivity;
 import com.aviary.android.feather.library.providers.FeatherContentProvider;
 import com.aviary.android.feather.library.providers.FeatherContentProvider.ActionsDbColumns.Action;
 import com.aviary.android.feather.library.utils.DecodeUtils;
@@ -61,13 +63,14 @@ public class MainActivity extends Activity {
 	
 	/**
 	 * ========== READ ME FIRST ===========
-	 * In order to use the Aviary SDK correctly you must first
-	 * get your own API-KEY from http://aviary.com/android.
-	 * Then copy the generated API-KEY into a file called "aviary-credentials.txt"
-	 * inside your assets folder.
-	 * Without that file your Activity would be unable to launch FeatherActivity.
+	 * In order to use the Aviary SDK correctly you must first get your own API-KEY from http://aviary.com/android.
+	 * Then copy your api key inside a metadata tag, inside the application tag, of your AndroidManifest.xml file, like this:
+	 * 
+	 * 	<meta-data
+	 * 		android:name="com.aviary.android.feather.v1.API_KEY"
+	 * 		android:value="xxxxxxxxx" />
 	 */
-	
+	private String mApiKey;
 
 	private static final int ACTION_REQUEST_GALLERY = 99;
 	private static final int ACTION_REQUEST_FEATHER = 100;
@@ -76,7 +79,6 @@ public class MainActivity extends Activity {
 	public static final String LOG_TAG = "aviary-launcher";
 
 	/** apikey is required http://developers.aviary.com/ */
-	private static final String API_KEY = "xxxxx";
 
 	/** Folder name on the sdcard where the images will be saved **/
 	private static final String FOLDER_NAME = "aviary";
@@ -152,6 +154,8 @@ public class MainActivity extends Activity {
 
 		mGalleryFolder = createFolders();
 		registerForContextMenu( mImageContainer );
+		
+		new ApiKeyReader().execute();
 	}
 
 	@Override
@@ -183,6 +187,16 @@ public class MainActivity extends Activity {
 		}
 
 		return super.onContextItemSelected( item );
+	}
+	
+	private void setApiKey( String value ) {
+		Log.i( LOG_TAG, "api-key: " + value );
+		mApiKey = value;
+		
+		if( null == value ) {
+			String message = MonitoredActivity.ApiKeyReader.MISSING_APIKEY_MESSAGE;
+			new AlertDialog.Builder( this ).setTitle( "API-KEY Missing!" ).setMessage( message ).show();
+		}
 	}
 
 	/**
@@ -611,30 +625,28 @@ public class MainActivity extends Activity {
 		// You can force feather to display only some tools ( see FilterLoaderFactory#Filters )
 		// you can omit this if you just want to display the default tools
 
-		/*
-		 * newIntent.putExtra( "tools-list", new String[] { 
-		 * FilterLoaderFactory.Filters.ENHANCE.name(),
-		 * FilterLoaderFactory.Filters.EFFECTS.name(), 
-		 * FilterLoaderFactory.Filters.BORDERS.name(), 
-		 * FilterLoaderFactory.Filters.STICKERS.name(),
-		 * FilterLoaderFactory.Filters.CROP.name(), 
-		 * FilterLoaderFactory.Filters.TILT_SHIFT.name(),
-		 * FilterLoaderFactory.Filters.ADJUST.name(), 
-		 * FilterLoaderFactory.Filters.BRIGHTNESS.name(), 
-		 * FilterLoaderFactory.Filters.CONTRAST.name(), 
-		 * FilterLoaderFactory.Filters.SATURATION.name(), 
-		 * FilterLoaderFactory.Filters.COLORTEMP.name(),
-		 * FilterLoaderFactory.Filters.SHARPNESS.name(), 
-		 * FilterLoaderFactory.Filters.COLOR_SPLASH.name(),
-		 * FilterLoaderFactory.Filters.DRAWING.name(), 
-		 * FilterLoaderFactory.Filters.TEXT.name(), 
-		 * FilterLoaderFactory.Filters.RED_EYE.name(), 
-		 * FilterLoaderFactory.Filters.WHITEN.name(), 
-		 * FilterLoaderFactory.Filters.BLEMISH.name(),
-		 * FilterLoaderFactory.Filters.MEME.name(),
-		 * } );
-		 */
-
+		
+//		 newIntent.putExtra( "tools-list", new String[] { 
+//			 FilterLoaderFactory.Filters.ENHANCE.name(),
+//			 FilterLoaderFactory.Filters.EFFECTS.name(), 
+//			 FilterLoaderFactory.Filters.STICKERS.name(),
+//			 FilterLoaderFactory.Filters.CROP.name(), 
+//			 FilterLoaderFactory.Filters.TILT_SHIFT.name(),
+//			 FilterLoaderFactory.Filters.ADJUST.name(), 
+//			 FilterLoaderFactory.Filters.BRIGHTNESS.name(), 
+//			 FilterLoaderFactory.Filters.CONTRAST.name(), 
+//			 FilterLoaderFactory.Filters.SATURATION.name(), 
+//			 FilterLoaderFactory.Filters.COLORTEMP.name(),
+//			 FilterLoaderFactory.Filters.SHARPNESS.name(), 
+//			 FilterLoaderFactory.Filters.COLOR_SPLASH.name(),
+//			 FilterLoaderFactory.Filters.DRAWING.name(), 
+//			 FilterLoaderFactory.Filters.TEXT.name(), 
+//			 FilterLoaderFactory.Filters.RED_EYE.name(), 
+//			 FilterLoaderFactory.Filters.WHITEN.name(), 
+//			 FilterLoaderFactory.Filters.BLEMISH.name(),
+//			 FilterLoaderFactory.Filters.MEME.name(),
+//		 } );
+		 
 
 		// === EXIT ALERT ===
 		// Optional
@@ -670,7 +682,7 @@ public class MainActivity extends Activity {
 		// The session-id key must be 64 char length.
 		// In your "onActivityResult" method, if the resultCode is RESULT_OK, the returned
 		// bundle data will also contain the "session" key/value you are passing here.
-		mSessionId = StringUtils.getSha256( System.currentTimeMillis() + API_KEY );
+		mSessionId = StringUtils.getSha256( System.currentTimeMillis() + mApiKey );
 		Log.d( LOG_TAG, "session: " + mSessionId + ", size: " + mSessionId.length() );
 		newIntent.putExtra( Constants.EXTRA_OUTPUT_HIRES_SESSION_ID, mSessionId );
 
@@ -835,7 +847,7 @@ public class MainActivity extends Activity {
 		String dstPath_;
 		ProgressDialog progress_;
 		String session_;
-		ExifInterfaceWrapper exif_;
+		ExifInterfaceExtended exif_;
 
 		/**
 		 * Initialize the HiRes async task
@@ -894,7 +906,7 @@ public class MainActivity extends Activity {
 				// then you *MUST* call this method before using any of the MoaHD methods, otherwise
 				// you will receive a java exception
 				try {
-					NativeFilterProxy.init( getBaseContext(), API_KEY );
+					NativeFilterProxy.init( getBaseContext() );
 				} catch ( AviaryInitializationException e ) {
 					return e.getMessage();
 				}
@@ -996,24 +1008,31 @@ public class MainActivity extends Activity {
 		 * @param originalExif
 		 * @param filename
 		 */
-		private void saveExif( ExifInterfaceWrapper originalExif, String filename ) {
+		private void saveExif( ExifInterfaceExtended originalExif, String filename ) {
 			// ok, now we can save back the EXIF tags
 			// to the new file
-			ExifInterfaceWrapper newExif = null;
+			ExifInterfaceExtended newExif = null;
 			try {
-				newExif = new ExifInterfaceWrapper( dstPath_ );
+				newExif = new ExifInterfaceExtended( dstPath_ );
 			} catch ( IOException e ) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			if ( null != newExif && null != originalExif ) {
-				originalExif.copyTo( newExif );
+				
+				// save the original exif tags to a Bundle object
+				Bundle out = new Bundle();
+				originalExif.copyTo( out );
+				
+				// import the exif tags from the original file 
+				newExif.copyFrom( out, true );
+				
 				// this should be changed because the editor already rotate the image
-				newExif.setAttribute( ExifInterfaceWrapper.TAG_ORIENTATION, "0" );
+				newExif.setAttribute( ExifInterfaceExtended.TAG_EXIF_ORIENTATION, "0" );
 				// let's update the software tag too
-				newExif.setAttribute( ExifInterfaceWrapper.TAG_SOFTWARE, "Aviary " + FeatherActivity.SDK_VERSION );
+				newExif.setAttribute( ExifInterfaceExtended.TAG_EXIF_SOFTWARE, "Aviary " + FeatherActivity.SDK_VERSION );
 				// ...and the modification date
-				newExif.setAttribute( ExifInterfaceWrapper.TAG_DATETIME, ExifInterfaceWrapper.formatDate( new Date() ) );
+				newExif.setAttribute( ExifInterfaceExtended.TAG_EXIF_DATETIME, ExifInterfaceExtended.formatDate( new Date() ) );
 				try {
 					newExif.saveAttributes();
 				} catch ( IOException e ) {
@@ -1071,7 +1090,7 @@ public class MainActivity extends Activity {
 				// Let's try to load the EXIF tags from
 				// the source image
 				try {
-					exif_ = new ExifInterfaceWrapper( srcPath );
+					exif_ = new ExifInterfaceExtended( srcPath );
 				} catch ( IOException e ) {
 					e.printStackTrace();
 				}
@@ -1174,5 +1193,20 @@ public class MainActivity extends Activity {
 			Log.i( LOG_TAG, "onCancelled" );
 		}
 
+	}
+	
+	class ApiKeyReader extends AsyncTask<Void, Void, String> {
+
+		@Override
+		protected String doInBackground( Void... params ) {
+			return MonitoredActivity.ApiKeyReader.getApiKey( getBaseContext() );
+		}
+		
+		@Override
+		protected void onPostExecute( String result ) {
+			super.onPostExecute( result );
+			setApiKey( result );
+		}
+		
 	}
 }

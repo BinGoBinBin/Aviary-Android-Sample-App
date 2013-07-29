@@ -3,6 +3,21 @@ This project has the goal to give a concrete example on how to use the **Aviary 
 
 Before download this project make sure to download the Aviary SDK: https://github.com/AviaryInc/Mobile-Feather-SDK-for-Android.
 
+=== CHANGES IN VERSION 150 ===
+IMPORTANT: Right now you must pass the api-key in your AndroidManifest.xml file, using the <meta-data> section. Without this the app
+will not work.
+Inside the <application> tag of the AndroidManifest.xml file you must add this tag:
+
+        <meta-data
+            android:name="com.aviary.android.feather.v1.API_KEY"
+            android:value="your-api-key-here" />
+            
+Then just replace the value with your api-key.
+Remember that you can get your free api-key from here: http://aviary.com/android
+
+ 
+
+
 === CHANGES IN VERSION 100 ===
 We drop the support to the Android API Level 8, this means that now the minimum android version supported is the 2.3.x ( API Level 9 ).
 A complete new UI, all the previous styles.xml, theme.xml and all the others xml files in the res/values/ folder were renamed.

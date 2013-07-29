@@ -26,7 +26,7 @@
 -printmapping mapping.txt 
 
 -keep class com.aviary.android.feather.headless.AviaryEffect
--keep class com.aviary.android.feather.headless.media.ExifInterfaceWrapper
+-keep class it.sephiroth.android.library.media.ExifInterfaceExtended
 -keep class com.aviary.android.feather.headless.moa.Moa
 -keep class com.aviary.android.feather.headless.moa.MoaResult
 -keep class com.aviary.android.feather.headless.moa.MoaHD

@@ -1,11 +1,15 @@
 package com.aviary.launcher;
 
+import it.sephiroth.android.library.media.ExifInterfaceExtended;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+
 import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
@@ -14,16 +18,15 @@ import android.location.Address;
 import android.net.Uri;
 import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Images.ImageColumns;
-import com.aviary.android.feather.headless.media.ExifInterfaceWrapper;
+
 import com.aviary.android.feather.headless.utils.CameraUtils;
 import com.aviary.android.feather.headless.utils.IOUtils;
 import com.aviary.android.feather.headless.utils.StringUtils;
 
-
 public class ImageInfo implements Serializable {
 
 	private static final long serialVersionUID = 1L;
-	
+
 	private static final int INDEX_CAPTION = 1;
 	private static final int INDEX_LATITUDE = 3;
 	private static final int INDEX_LONGITUDE = 4;
@@ -32,89 +35,141 @@ public class ImageInfo implements Serializable {
 	private static final int INDEX_SIZE_ID = 11;
 	private static final int INDEX_BUCKET_TITLE = 12;
 
-	public static final String[] PROJECTION = { 
-		ImageColumns._ID, // 0
-		ImageColumns.TITLE, // 1
-		ImageColumns.MIME_TYPE, // 2
-		ImageColumns.LATITUDE, // 3
-		ImageColumns.LONGITUDE, // 4
-		ImageColumns.DATE_TAKEN, // 5
-		ImageColumns.DATE_ADDED, // 6
-		ImageColumns.DATE_MODIFIED, // 7
-		ImageColumns.DATA, // 8
-		ImageColumns.ORIENTATION, // 9
-		ImageColumns.BUCKET_ID, // 10
-		ImageColumns.SIZE, // 11
-		ImageColumns.BUCKET_DISPLAY_NAME, // 12
+	public static final String[] PROJECTION = { ImageColumns._ID, // 0
+			ImageColumns.TITLE, // 1
+			ImageColumns.MIME_TYPE, // 2
+			ImageColumns.LATITUDE, // 3
+			ImageColumns.LONGITUDE, // 4
+			ImageColumns.DATE_TAKEN, // 5
+			ImageColumns.DATE_ADDED, // 6
+			ImageColumns.DATE_MODIFIED, // 7
+			ImageColumns.DATA, // 8
+			ImageColumns.ORIENTATION, // 9
+			ImageColumns.BUCKET_ID, // 10
+			ImageColumns.SIZE, // 11
+			ImageColumns.BUCKET_DISPLAY_NAME, // 12
 	};
-	
-	
-	private String aperture;
+
+	public long id;
+	public String caption;
+	public String mimeType;
+	public long fileSize = 0L;
+	public float latitude = INVALID_LATLNG;
+	public float longitude = INVALID_LATLNG;
+	public long dateTakenInMs;
+	public long dateAddedInSec;
+	public long dateModifiedInSec;
+	public String filePath;
+	public int bucketId;
+	public int rotation = 0;
+
 	private String dateTime;
-	private String exposureTime;
-	private String iso;
-	private String maker;
-	private String model;
-	private String focalLength;
-	private int flash;
-	private int whiteBalance;
-	private double altitude;
 	private int width, height;
+	private int orientation;
 	private Address address;
-	private String artist;
-	private String brightness;
-	private String copyright;
-	private String digitalZoom;
-	private int exposureMode;
-	private int exposureProgram;
-	private int lightSource;
-	private int meteringMode;
+
+	private String dateTimeFile;
+
+	private String process;
+
+	private int quality;
+
+	private String exifVersion;
+
+	private String camera;
+
 	private String software;
-	private String distance;
-	private int distanceRange;
-	private int rotation = 0;
-	private float latitude = INVALID_LATLNG;
-	private float longitude = INVALID_LATLNG;
-	private String caption;
-	private long fileSize = 0L;
-	private String filePath;
-	private String bucketDisplayName;	
+
+	private String artist;
+
+	private String copyright;
+
+	private String dateTimeDigitized;
+
+	private String dateTimeOriginal;
+
+	private String flash;
+
+	private String focalLength;
+
+	private String digitalZoom;
+
+	private String ccdWidth;
+
+	private String exposureTime;
+
+	private String apertureSize;
+
+	private String brightness;
+
+	private String colorSpace;
+
+	private String subjectDistance;
+
+	private String subjectDistanceRange;
+
+	private String exposureBias;
+
+	private String whiteBalance;
+
+	private String lightSource;
+
+	private String meteringMode;
+
+	private String exposureProgram;
+
+	private String exposureMode;
+
+	private String shutterSpeed;
+
+	private String sensingMethod;
+
+	private String sceneCaptureType;
+
+	private String altitude;
+
+	private String latitudeString;
+
+	private String longitudeString;
+
+	private String bucketDisplayName;
 
 	public static final float INVALID_LATLNG = 0f;
 
-	public ImageInfo() {}
+	public ImageInfo () {}
 
-	public ImageInfo( Context context, Uri uri ) throws IOException {
+	public ImageInfo ( Context context, Uri uri ) throws IOException {
 
 		String path;
 		path = IOUtils.getRealFilePath( context, uri );
-		
+
 		onLoadFromUri( context, uri );
-		
-		if( null != path ){
+
+		if ( null != path ) {
 			onLoadExifData( path );
 			onLoadImageSize( path, rotation );
 		}
 	}
-	
-	private void onLoadFromUri( Context context, Uri imageUri ){
+
+	private void onLoadFromUri( Context context, Uri imageUri ) {
 		Uri uri = Images.Media.EXTERNAL_CONTENT_URI;
 		Cursor cursor;
-		
-		if( ContentResolver.SCHEME_CONTENT.equals( imageUri.getScheme()) ){
+
+		if ( ContentResolver.SCHEME_CONTENT.equals( imageUri.getScheme() ) ) {
 			cursor = context.getContentResolver().query( imageUri, PROJECTION, null, null, null );
 		} else {
-			cursor = context.getContentResolver().query( uri, PROJECTION, ImageColumns.DATA + " LIKE '%" + imageUri.toString() + "%'", null, null );
+			cursor = context.getContentResolver().query( uri, PROJECTION,
+					ImageColumns.DATA + " LIKE '%" + imageUri.toString() + "%'", null, null );
 		}
-		
-		if( null != cursor ){
-			if( cursor.moveToFirst() ){
+
+		if ( null != cursor ) {
+			if ( cursor.moveToFirst() ) {
 				onLoadFromCursor( cursor );
 			}
 			cursor.close();
 		}
 	}
-	
+
 	protected void onLoadFromCursor( Cursor cursor ) {
 		caption = cursor.getString( INDEX_CAPTION );
 		latitude = cursor.getFloat( INDEX_LATITUDE );
@@ -123,42 +178,244 @@ public class ImageInfo implements Serializable {
 		rotation = cursor.getInt( INDEX_ORIENTATION );
 		fileSize = cursor.getLong( INDEX_SIZE_ID );
 		bucketDisplayName = cursor.getString( INDEX_BUCKET_TITLE );
-	}	
+	}
 
-	private void onLoadExifData( final String path ) throws IOException {
+	private void onLoadExifData( String path ) {
+		if ( null != path ) {
+			try {
+				ExifInterfaceExtended mExif = new ExifInterfaceExtended( path );
 
-		ExifInterfaceWrapper exif = new ExifInterfaceWrapper( path );
+				if ( null != mExif ) {
+					NumberFormat decimalFormatter = DecimalFormat.getNumberInstance();
 
-		altitude = exif.getAltitude( -1 );
-		if ( rotation == 0 ) rotation = exif.getOrientation();
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_JPEG_FILESIZE ) ) {
+						fileSize = mExif.getAttributeInt( ExifInterfaceExtended.TAG_JPEG_FILESIZE, 0 );
+					}
 
-		aperture = exif.getAttribute( ExifInterfaceWrapper.TAG_APERTURE );
-		artist = exif.getAttribute( ExifInterfaceWrapper.TAG_ARTIST );
-		brightness = exif.getAttribute( ExifInterfaceWrapper.TAG_BRIGHTNESS_VALUE );
-		copyright = exif.getAttribute( ExifInterfaceWrapper.TAG_COPYRIGHT );
-		dateTime = exif.getAttribute( ExifInterfaceWrapper.TAG_DATETIME );
-		digitalZoom = exif.getAttribute( ExifInterfaceWrapper.TAG_DIGITAL_ZOOM );
-		exposureTime = exif.getAttribute( ExifInterfaceWrapper.TAG_EXPOSURE_TIME );
-		exposureMode = exif.getAttributeInt( ExifInterfaceWrapper.TAG_EXPOSURE_MODE, -1 );
-		exposureProgram = exif.getAttributeInt( ExifInterfaceWrapper.TAG_EXPOSURE_PROGRAM, -1 );
-		flash = exif.getAttributeInt( ExifInterfaceWrapper.TAG_FLASH, 0 );
-		focalLength = exif.getAttribute( ExifInterfaceWrapper.TAG_FOCAL_LENGTH );
-		iso = exif.getAttribute( ExifInterfaceWrapper.TAG_ISO );
-		lightSource = exif.getAttributeInt( ExifInterfaceWrapper.TAG_LIGHTSOURCE, -1 );
-		maker = exif.getAttribute( ExifInterfaceWrapper.TAG_MAKE );
-		model = exif.getAttribute( ExifInterfaceWrapper.TAG_MODEL );
-		meteringMode = exif.getAttributeInt( ExifInterfaceWrapper.TAG_METERING_MODE, -1 );
-		software = exif.getAttribute( ExifInterfaceWrapper.TAG_SOFTWARE );
-		distance = exif.getAttribute( ExifInterfaceWrapper.TAG_SUBJECT_DISTANCE );
-		distanceRange = exif.getAttributeInt( ExifInterfaceWrapper.TAG_SUBJECT_DISTANCE_RANGE, -1 );
-		whiteBalance = exif.getAttributeInt( ExifInterfaceWrapper.TAG_WHITE_BALANCE, -1 );
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_JPEG_FILE_DATETIME ) ) {
 
-		float[] lat = new float[] { INVALID_LATLNG, INVALID_LATLNG };
-		exif.getLatLong( lat );
+						Date datetimeFile = new Date( mExif.getDateTime( mExif
+								.getAttribute( ExifInterfaceExtended.TAG_JPEG_FILE_DATETIME ) ) );
+						dateTimeFile = datetimeFile.toString();
+					}
 
-		if ( lat[0] != INVALID_LATLNG ) {
-			latitude = lat[0];
-			longitude = lat[1];
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_ORIENTATION ) ) {
+						int value = mExif.getOrientation();
+						if ( value != 0 ) {
+							orientation = value;
+						}
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_JPEG_IMAGE_WIDTH )
+							&& mExif.hasAttribute( ExifInterfaceExtended.TAG_JPEG_IMAGE_HEIGHT ) ) {
+						int exif_width = mExif.getAttributeInt( ExifInterfaceExtended.TAG_JPEG_IMAGE_WIDTH, 0 );
+						int exif_height = mExif.getAttributeInt( ExifInterfaceExtended.TAG_JPEG_IMAGE_HEIGHT, 0 );
+						if ( exif_width > 0 && exif_height > 0 ) {
+							width = exif_width;
+							height = exif_height;
+							if ( orientation == 90 || orientation == 270 ) {
+								int w = width;
+								width = height;
+								height = w;
+							}
+						}
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_JPEG_PROCESS ) ) {
+						int value = mExif.getAttributeInt( ExifInterfaceExtended.TAG_JPEG_PROCESS, 0 );
+						process = parseProcess( value );
+					}
+
+					quality = mExif.getJpegQuality();
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_VERSION ) ) {
+						exifVersion = mExif.getAttribute( ExifInterfaceExtended.TAG_EXIF_VERSION );
+					}
+
+					StringBuilder sb = new StringBuilder();
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_MAKE ) ) {
+						sb.append( mExif.getAttribute( ExifInterfaceExtended.TAG_EXIF_MAKE ) );
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_MODEL ) ) {
+						if ( sb.length() > 0 ) {
+							sb.append( "/" );
+						}
+						sb.append( mExif.getAttribute( ExifInterfaceExtended.TAG_EXIF_MODEL ) );
+					}
+
+					if ( sb.length() > 0 ) {
+						camera = sb.toString();
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_SOFTWARE ) ) {
+						software = mExif.getAttribute( ExifInterfaceExtended.TAG_EXIF_SOFTWARE );
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_ARTIST ) ) {
+						artist = mExif.getAttribute( ExifInterfaceExtended.TAG_EXIF_ARTIST );
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_COPYRIGHT ) ) {
+						String value = mExif.getAttribute( ExifInterfaceExtended.TAG_EXIF_COPYRIGHT );
+						if ( null != value ) {
+							value = value.trim();
+							if ( value.length() > 0 ) {
+								copyright = value;
+							}
+						}
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_DATETIME ) ) {
+						Date date = new Date( mExif.getDateTime( mExif.getAttribute( ExifInterfaceExtended.TAG_EXIF_DATETIME ) ) );
+						dateTime = date.toString();
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_DATETIME_DIGITIZED ) ) {
+						Date date = new Date( mExif.getDateTime( mExif
+								.getAttribute( ExifInterfaceExtended.TAG_EXIF_DATETIME_DIGITIZED ) ) );
+						dateTimeDigitized = date.toString();
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_DATETIME_ORIGINAL ) ) {
+						Date date = new Date( mExif.getDateTime( mExif
+								.getAttribute( ExifInterfaceExtended.TAG_EXIF_DATETIME_ORIGINAL ) ) );
+						dateTimeOriginal = date.toString();
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_FLASH ) ) {
+						int value = mExif.getAttributeInt( ExifInterfaceExtended.TAG_EXIF_FLASH, 0 );
+						flash = processFlash( value );
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_FOCAL_LENGHT ) ) {
+						String value = mExif.getAttributeDouble( ExifInterfaceExtended.TAG_EXIF_FOCAL_LENGHT, 0 ) + "mm";
+
+						if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_FOCAL_LENGTH_35_MM ) ) {
+							value += " (35mm equivalent: "
+									+ mExif.getAttributeInt( ExifInterfaceExtended.TAG_EXIF_FOCAL_LENGTH_35_MM, 0 ) + "mm)";
+						}
+
+						focalLength = value;
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_DIGITAL_ZOOM_RATIO ) ) {
+						digitalZoom = mExif.getAttribute( ExifInterfaceExtended.TAG_EXIF_DIGITAL_ZOOM_RATIO );
+					}
+
+					double ccd_width = mExif.getCCDWidth();
+					if ( ccd_width > 0 ) {
+						decimalFormatter.setMaximumFractionDigits( 1 );
+						ccdWidth = decimalFormatter.format( ccd_width ) + "mm";
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_EXPOSURE_TIME ) ) {
+						exposureTime = mExif.getAttribute( ExifInterfaceExtended.TAG_EXIF_EXPOSURE_TIME ) + "s";
+					}
+
+					sb = new StringBuilder();
+					double fNumber = mExif.getApertureSize();
+
+					if ( fNumber > 0 ) {
+						sb.append( "f/" + fNumber + " " );
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_ISO_SPEED_RATINGS ) ) {
+						sb.append( "ISO-" + mExif.getAttribute( ExifInterfaceExtended.TAG_EXIF_ISO_SPEED_RATINGS ) );
+					}
+
+					if ( sb.length() > 0 ) {
+						apertureSize = sb.toString();
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_BRIGHTNESS ) ) {
+						brightness = mExif.getAttribute( ExifInterfaceExtended.TAG_EXIF_BRIGHTNESS );
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_COLOR_SPACE ) ) {
+						colorSpace = processColorSpace( mExif.getAttributeInt( ExifInterfaceExtended.TAG_EXIF_COLOR_SPACE, 0 ) );
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_SUBJECT_DISTANCE ) ) {
+						double distance = mExif.getAttributeDouble( ExifInterfaceExtended.TAG_EXIF_SUBJECT_DISTANCE, 0 );
+						if ( distance > 0 ) {
+							subjectDistance = distance + "m";
+						} else {
+							subjectDistance = "Infinite";
+						}
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_SUBJECT_DISTANCE_RANGE ) ) {
+						int value = mExif.getAttributeInt( ExifInterfaceExtended.TAG_EXIF_SUBJECT_DISTANCE_RANGE, 0 );
+						subjectDistanceRange = processSubjectDistanceRange( value );
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_EXPOSURE_BIAS ) ) {
+						exposureBias = mExif.getAttribute( ExifInterfaceExtended.TAG_EXIF_EXPOSURE_BIAS );
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_WHITE_BALANCE ) ) {
+						whiteBalance = processWhiteBalance( mExif.getAttributeInt( ExifInterfaceExtended.TAG_EXIF_WHITE_BALANCE, 0 ) );
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_LIGHT_SOURCE ) ) {
+						lightSource = processLightSource( mExif.getAttributeInt( ExifInterfaceExtended.TAG_EXIF_LIGHT_SOURCE, 0 ) );
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_METERING_MODE ) ) {
+						meteringMode = processMeteringMode( mExif.getAttributeInt( ExifInterfaceExtended.TAG_EXIF_METERING_MODE, 0 ) );
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_EXPOSURE_PROGRAM ) ) {
+						exposureProgram = processExposureProgram( mExif.getAttributeInt(
+								ExifInterfaceExtended.TAG_EXIF_EXPOSURE_PROGRAM, 0 ) );
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_EXPOSURE_MODE ) ) {
+						exposureMode = processExposureMode( mExif.getAttributeInt( ExifInterfaceExtended.TAG_EXIF_EXPOSURE_MODE, 0 ) );
+					}
+
+					if ( mExif.getAttributeDouble( ExifInterfaceExtended.TAG_EXIF_SHUTTER_SPEED_VALUE, 0 ) > 0 ) {
+						double value = mExif.getAttributeDouble( ExifInterfaceExtended.TAG_EXIF_SHUTTER_SPEED_VALUE, 0 );
+
+						decimalFormatter.setMaximumFractionDigits( 1 );
+						String string = "1/" + decimalFormatter.format( Math.pow( 2, value ) ) + "s";
+						shutterSpeed = string;
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_SENSING_METHOD ) ) {
+						sensingMethod = processSensingMethod( mExif.getAttributeInt( ExifInterfaceExtended.TAG_EXIF_SENSING_METHOD,
+								0 ) );
+					}
+
+					if ( mExif.hasAttribute( ExifInterfaceExtended.TAG_EXIF_SCENE_CAPTURE_TYPE ) ) {
+						sceneCaptureType = processSceneCaptureType( mExif.getAttributeInt(
+								ExifInterfaceExtended.TAG_EXIF_SCENE_CAPTURE_TYPE, 0 ) );
+					}
+
+					double alt = mExif.getAltitude( 0 );
+					if ( alt != 0 ) {
+						decimalFormatter.setMaximumFractionDigits( 1 );
+						altitude = decimalFormatter.format( alt ) + "m";
+					}
+
+					float[] lat = new float[] { INVALID_LATLNG, INVALID_LATLNG };
+					mExif.getLatLong( lat );
+
+					if ( lat[0] != INVALID_LATLNG ) {
+						latitude = lat[0];
+						longitude = lat[1];
+
+						latitudeString = mExif.getLatitude();
+						longitudeString = mExif.getLongitude();
+					}
+				}
+
+			} catch ( IOException e ) {
+				e.printStackTrace();
+				return;
+			}
 		}
 	}
 
@@ -175,20 +432,20 @@ public class ImageInfo implements Serializable {
 		width = options.outWidth;
 		height = options.outHeight;
 
+		if ( this.orientation == 0 ) {
+			this.orientation = orientation;
+		}
+
 		if ( orientation == 90 || orientation == 270 ) {
 			width = options.outHeight;
 			height = options.outWidth;
 		}
+
 	}
-	
-	public void getLatLong( float[] latlong ) {
-		latlong[0] = latitude;
-		latlong[1] = longitude;
-	}
-	
+
 	public void setAddress( Address value ) {
 		address = value;
-	}	
+	}
 
 	public String getAddressRepr() {
 		if ( null != address ) {
@@ -206,27 +463,169 @@ public class ImageInfo implements Serializable {
 
 	public List<Info> getInfo() {
 		List<Info> result = new ArrayList<Info>();
-		double dValue;
-		String sValue;
-		NumberFormat decimalFormatter = DecimalFormat.getNumberInstance();
 
-		if ( null != caption ) result.add( new Info( "Title", caption ) );
-		if ( null != bucketDisplayName ) result.add( new Info( "Album", bucketDisplayName ) );
-		if ( null != dateTime ) result.add( new Info( "Date Modified", dateTime ) );
-		
-		if ( width > 0 && height > 0 )
+		if ( null != caption ) {
+			result.add( new Info( "Title", caption ) );
+		}
+
+		if ( fileSize > 0 ) {
+			String value = humanReadableByteCount( fileSize, true );
+			result.add( new Info( "File size", value ) );
+		}
+
+		if ( null != dateTimeFile ) {
+			result.add( new Info( "File Date", dateTimeFile ) );
+		}
+
+		if ( width > 0 && height > 0 ) {
 			result.add( new Info( "Dimension", width + "x" + height + " (" + CameraUtils.getMegaPixels( width, height ) + "MP)" ) );
-		
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		if ( null != process ) {
+			sb.append( "Process: " + process );
+		}
+
+		if ( quality > 0 ) {
+			if ( sb.length() > 0 ) {
+				sb.append( ", " );
+			}
+			sb.append( "quality: " + quality );
+		}
+
+		if ( sb.length() > 0 ) {
+			result.add( new Info( "JPEG Info", sb.toString() ) );
+		}
+
+		if ( null != exifVersion ) {
+			result.add( new Info( "Exif Version", exifVersion ) );
+		}
+
+		if ( null != camera ) {
+			result.add( new Info( "Camera", camera ) );
+		}
+
+		if ( null != software ) {
+			result.add( new Info( "Software", software ) );
+		}
+
+		if ( null != artist ) {
+			result.add( new Info( "Artist", artist ) );
+		}
+
+		if ( null != copyright ) {
+			result.add( new Info( "Copyright", copyright ) );
+		}
+
+		if ( orientation != 0 ) {
+			result.add( new Info( "Orientation", orientation + "¡" ) );
+		}
+
+		if ( null != dateTime ) {
+			result.add( new Info( "Date", dateTime ) );
+		}
+
+		if ( null != dateTimeDigitized ) {
+			result.add( new Info( "Date Digitized", dateTimeDigitized ) );
+		}
+
+		if ( null != dateTimeOriginal ) {
+			result.add( new Info( "Date Original", dateTimeOriginal ) );
+		}
+
+		if ( null != flash ) {
+			result.add( new Info( "Flash", flash ) );
+		}
+
+		if ( null != focalLength ) {
+			result.add( new Info( "Focal Length", focalLength ) );
+		}
+
+		if ( null != digitalZoom ) {
+			result.add( new Info( "Digital Zoom", digitalZoom ) );
+		}
+
+		if ( null != ccdWidth ) {
+			result.add( new Info( "CCD Width", ccdWidth ) );
+		}
+
+		if ( null != exposureTime ) {
+			result.add( new Info( "Exposure Time", exposureTime ) );
+		}
+
+		if ( null != apertureSize ) {
+			result.add( new Info( "Aperture Size", apertureSize ) );
+		}
+
+		if ( null != brightness ) {
+			result.add( new Info( "Brightness", brightness ) );
+		}
+
+		if ( null != colorSpace ) {
+			result.add( new Info( "Color Space", colorSpace ) );
+		}
+
+		if ( null != subjectDistance ) {
+			result.add( new Info( "Subject Distance", subjectDistance ) );
+		}
+
+		if ( null != subjectDistanceRange ) {
+			result.add( new Info( "Subject Distance Range", subjectDistanceRange ) );
+		}
+
+		if ( null != exposureBias ) {
+			result.add( new Info( "Exposure Bias", exposureBias ) );
+		}
+
+		if ( null != whiteBalance ) {
+			result.add( new Info( "White Balance", whiteBalance ) );
+		}
+
+		if ( null != lightSource ) {
+			result.add( new Info( "Light Source", lightSource ) );
+		}
+
+		if ( null != meteringMode ) {
+			result.add( new Info( "Metering Mode", meteringMode ) );
+		}
+
+		if ( null != exposureProgram ) {
+			result.add( new Info( "Exposure Program", exposureProgram ) );
+		}
+
+		if ( null != exposureMode ) {
+			result.add( new Info( "Exposure Mode", exposureMode ) );
+		}
+
+		if ( null != shutterSpeed ) {
+			result.add( new Info( "Shutter Speed", shutterSpeed ) );
+		}
+
+		if ( null != sensingMethod ) {
+			result.add( new Info( "Sensing Method", sensingMethod ) );
+		}
+
+		if ( null != sceneCaptureType ) {
+			result.add( new Info( "Scene Capture Type", sceneCaptureType ) );
+		}
+
 		Info addressInfo = new Info( "Address", "" );
 		boolean shouldAdd = false;
-		
+
 		float[] latlong = new float[] { INVALID_LATLNG, INVALID_LATLNG };
 		getLatLong( latlong );
+
 		if ( latlong[0] != INVALID_LATLNG ) {
 			shouldAdd = true;
 			addressInfo.rawData = latlong;
-			addressInfo.value = latlong[0] + ", " + latlong[1];
-		
+
+			if ( null != latitudeString && null != longitudeString ) {
+				addressInfo.value = latitudeString + "/" + longitudeString;
+			} else {
+				addressInfo.value = "";
+			}
+
 			if ( null != address ) {
 				String value = getAddressRepr();
 				if ( null != value ) {
@@ -235,316 +634,289 @@ public class ImageInfo implements Serializable {
 				}
 			}
 		}
-				
-		if( shouldAdd ){
+
+		if ( shouldAdd ) {
 			result.add( addressInfo );
-		}
-		
-		
-		if( altitude != -1 ) result.add( new Info( "Altitude", String.valueOf( altitude ) + " mt" ));
-		if ( rotation != 0 ) result.add( new Info( "Orientation", String.valueOf( rotation ) ) );
-		if ( fileSize > 0 ) result.add( new Info( "Size", readableFileSize( fileSize ) ) );
-		if ( null != maker ) result.add( new Info( "Camera", maker ) );
-		if ( null != model ) result.add( new Info( "Model", model ) );
-		if ( flash != 0 ) {
-			String flashMode = computeFlash( flash );
-			if( null != flashMode ){
-				result.add( new Info( "Flash", flashMode ) );
+			if ( null != altitude ) {
+				result.add( new Info( "Altitude", altitude ) );
 			}
 		}
-		
-		if( whiteBalance > -1 ){
-			sValue = computeWhiteBalance( whiteBalance );
-			if( null != sValue ){
-				result.add( new Info( "White balance", sValue ) );
-			}
-		}
-		
-		StringBuilder sb = new StringBuilder();
-		
-		if ( null != aperture ){
-			dValue = ExifInterfaceWrapper.convertRationalToDouble( aperture );
-			if( dValue > 0 ){
-				decimalFormatter.setMaximumFractionDigits( 1 );
-				sb.append( "F/" + decimalFormatter.format( dValue ) + " " );
-			}
-		}
-		
-		if ( null != focalLength ) {
-			dValue = ExifInterfaceWrapper.convertRationalToDouble( focalLength );
-			if( dValue > 0 ){
-				sb.append( dValue + "mm " );
-			}
-		}		
-		
-		if( null != exposureTime ){
-			result.add( new Info("Exposure speed", exposureTime ));
-		}
-		
-		if ( null != iso ){
-			sb.append( "ISO-" + iso );
-		}
-		
-		if( sb.length() > 0 ){
-			result.add( new Info( "EXIF", sb.toString() ) );
-		}
-		
-		if( exposureMode > -1 ){
-			sValue = computeExposureMode( exposureMode );
-			if( null != sValue ){
-				result.add( new Info("Exposure Mode", sValue ) );
-			}
-		}
-		
-		if( exposureProgram > -1 ){
-			sValue = computeExposureProgram( exposureProgram );
-			if( null != sValue ){
-				result.add( new Info("Exposure Program", sValue ) );
-			}
-		}
-		
-		if( lightSource > 0 ){
-			sValue = computeLightSource( lightSource );
-			if( null != sValue ){
-				result.add( new Info("LightSource", sValue));
-			}
-		}
-		
-		if( null != artist ){
-			result.add( new Info( "Artist", artist ));
-		}
-		
-		if( null != copyright ){
-			result.add( new Info("Copyright", copyright ) );
-		}
-		
-		if( null != software ){
-			result.add( new Info("Software", software ) );
-		}
-		
-		if( null != brightness ){
-			dValue = ExifInterfaceWrapper.convertRationalToDouble( brightness );
-			if( dValue != 0 ){
-				decimalFormatter.setMaximumFractionDigits( 2 );
-				result.add( new Info("Brightness", decimalFormatter.format( dValue ) ));
-			}
-		}
-		
-		if( meteringMode != 0 ){
-			sValue = computeMeteringMode( meteringMode );
-			if( null != sValue ){
-				result.add( new Info( "Metering Mode", sValue ) );
-			}
-		}
-		
-		if( null != digitalZoom ){
-			dValue = ExifInterfaceWrapper.convertRationalToDouble( digitalZoom );
-			if( dValue > 0 ){
-				result.add( new Info("Digital zoom", (int)dValue + "X") );
-			}
-		}
-		
-		if( null != distance ){
-			dValue = ExifInterfaceWrapper.convertRationalToDouble( distance );
-			if( dValue > 0 ){
-				result.add( new Info("Subject distance", decimalFormatter.format( dValue ) + "mt"));
-			}
-		}
-		
-		if( distanceRange > 0 ){
-			sValue = computeDistanceRangeType( distanceRange );
-			if( null != sValue ){
-				result.add( new Info("Subject distance range", sValue ) );
-			}
-		}
-		
+
 		if ( null != filePath ) result.add( new Info( "Path", filePath ) );
 		return result;
 	}
 	
-	private String computeDistanceRangeType( int value ){
-		switch( value ){
-			case ExifInterfaceWrapper.SUBJECT_DISTANCE_RANGE_CLOSE:
-				return "Close";
-			case ExifInterfaceWrapper.SUBJECT_DISTANCE_RANGE_DISTANT:
-				return "Distant";
-			case ExifInterfaceWrapper.SUBJECT_DISTANCE_RANGE_MACRO:
-				return "Macro";
-		}
-		return null;
-	}
-	
-	private String computeMeteringMode( int value ){
-		switch( value ){
-			case ExifInterfaceWrapper.METERING_AVERAGE:
-				return "Average";
-			case ExifInterfaceWrapper.METERING_CENTER_WEIGHT_AVERAGE:
-				return "Center weight average";
-			case ExifInterfaceWrapper.METERING_MULTI_SPOT:
-				return "Multi spot";
-			case ExifInterfaceWrapper.METERING_OTHER:
-				return "Other";
-			case ExifInterfaceWrapper.METERING_PARTIAL:
-				return "Partial";
-			case ExifInterfaceWrapper.METERING_PATTERN:
-				return "Pattern";
-			case ExifInterfaceWrapper.METERING_SPOT:
-				return "Spot";
-		}
-		return null;
-	}
-	
-	private String computeLightSource( int value ) {
+	public void getLatLong( float[] latlong ) {
+		latlong[0] = latitude;
+		latlong[1] = longitude;
+	}	
+
+	private String processSceneCaptureType( int value ) {
 		switch ( value ) {
-			case ExifInterfaceWrapper.LIGHTSOURCE_DAYLIGHT:
-				return "Day light";
-			case ExifInterfaceWrapper.LIGHTSOURCE_FLUORESCENT:
-				return "Fluorescent";
-			case ExifInterfaceWrapper.LIGHTSOURCE_TUNGSTEN:
-				return "Tungsten";
-			case ExifInterfaceWrapper.LIGHTSOURCE_FLASH:
-				return "Flash";
-			case ExifInterfaceWrapper.LIGHTSOURCE_FINEWEATHER:
-				return "Fine weather";
-			case ExifInterfaceWrapper.LIGHTSOURCE_CLOUDYWEATHER:
-				return "Cloudy weather";
-			case ExifInterfaceWrapper.LIGHTSOURCE_SHADE:
-				return "Shade";
-			case ExifInterfaceWrapper.LIGHTSOURCE_DAYLIGHT_FLUORESCENT:
-				return "Day light fluorescent";
-			case ExifInterfaceWrapper.LIGHTSOURCE_DAYWHITE_FLUORESCENT:
-				return "Day white fluorescent";
-			case ExifInterfaceWrapper.LIGHTSOURCE_COOLWHITE_FLUORESCENT:
-				return "Cool white";
-			case ExifInterfaceWrapper.LIGHTSOURCE_WHITE_FLUORESCENT:
-				return "White fluorescent";
-			case ExifInterfaceWrapper.LIGHTSOURCE_STANDARD_LIGHTA:
-				return "Standard light A";
-			case ExifInterfaceWrapper.LIGHTSOURCE_STANDARD_LIGHTB:
-				return "Standard light B";
-			case ExifInterfaceWrapper.LIGHTSOURCE_STANDARD_LIGHTC:
-				return "Standard light C";
-			case ExifInterfaceWrapper.LIGHTSOURCE_D55:
-				return "D55";
-			case ExifInterfaceWrapper.LIGHTSOURCE_D65:
-				return "D65";
-			case ExifInterfaceWrapper.LIGHTSOURCE_D75:
-				return "D75";
-			case ExifInterfaceWrapper.LIGHTSOURCE_D50:
-				return "D50";
-			case ExifInterfaceWrapper.LIGHTSOURCE_ISOSTUDIO_TUNGSTEN:
-				return "Tungsten";
-			case ExifInterfaceWrapper.LIGHTSOURCE_OTHER_LIGHTSOURCE:
-				return "Light source";
-		}
-		return null;
-	}
-	
-	private String computeExposureProgram( int value ){
-		switch( value ){
-			case ExifInterfaceWrapper.EXPOSURE_PROGRAM_ACTION:
-				return "Action";
-			case ExifInterfaceWrapper.EXPOSURE_PROGRAM_APERTURE_PRIORITY:
-				return "Priority";
-			case ExifInterfaceWrapper.EXPOSURE_PROGRAM_CREATIVE:
-				return "Creative";
-			case ExifInterfaceWrapper.EXPOSURE_PROGRAM_LANDSCAPE:
-				return "Landscape";
-			case ExifInterfaceWrapper.EXPOSURE_PROGRAM_MANUAL:
-				return "Manual";
-			case ExifInterfaceWrapper.EXPOSURE_PROGRAM_NORMAL:
-				return "Normal";
-			case ExifInterfaceWrapper.EXPOSURE_PROGRAM_PORTRAIT:
-				return "Portrait";
-			case ExifInterfaceWrapper.EXPOSURE_PROGRAM_SHUTTER_PRIORITY:
-				return "Shutter Priority";
-			default:
-				return "Custom";	
-		}
-	}
-	
-	private String computeExposureMode( int value ){
-		switch( value ){
-			case ExifInterfaceWrapper.EXPOSURE_MODE_AUTO_EXPOSURE:
-				return "Auto Exposure";
-			case ExifInterfaceWrapper.EXPOSURE_MODE_AUTO_BRACKET:
-				return "Auto Bracket";
-			case ExifInterfaceWrapper.EXPOSURE_MODE_MANUAL_EXPOSURE:
-				return "Manual";
-		}
-		return null;
-	}
-	
-	private String computeWhiteBalance( int value ){
-		switch( value ){
-			case ExifInterfaceWrapper.WHITE_BALANCE_AUTO:
-				return "Auto";
-			case ExifInterfaceWrapper.WHITE_BALANCE_MANUAL:
-				return "Manual";
-		}
-		return null;
-	}
-	
-	private String computeFlash( int value ){
-		switch( value ){
 			case 0:
-				return "No flash";
-			case 0x01:
-				return "Flash fired";
-			case 0x05:
-				return "Strobe return light not detected";
-			case 0x07:
-				return "Strobe return light detected";
-			case 0x09:
-				return "Compulsory flash";
-			case 0x0D:
-				return "Compulsory flash, light not detected";
-			case 0x0F:
-				return "Compulsory flash, light detected";
-			case 0x10:
-				return "Flash not fired, compulsory flash";
-			case 0x18:
-				return "Flash not fired, auto";
-			case 0x19:
-				return "Flash fired, auto";
-			case 0x1D:
-				return "Flash fired, auto, light not detected";
-			case 0x1F:
-				return "Flash fired, auto, light detected";
-			case 0x20:
-				return "No flash function";
-			case 0x41:
-				return "Flash fired, red-eye reduction";
-			case 0x45:
-				return "Red-eye reduction, light not detected";
-			case 0x47:
-				return "Red-eye reduction, light detected";
-			case 0x49:
-				return "Compulsory flash, red-eye reduction";
-			case 0x4D:
-				return "Compulsory flash, red-eye reduction, light not detected";
-			case 0x4F:
-				return "Compulsory flash, red-eye reduction, light detected";
-			case 0x59:
-				return "Flash fired, auto, red-eye reduction";
-			case 0x5D:
-				return "Flash fired, auto, light not detected, red-eye reduction";
-			case 0x5F:
-				return "Flash fired, auto, light detected, red-eye reduction";
+				return "Standard";
+			case 1:
+				return "Landscape";
+			case 2:
+				return "Portrait";
+			case 3:
+				return "Night scene";
+			default:
+				return "Unknown";
 		}
-		return null;
 	}
-	
-	/**
-	 * Transform a long into a reabable human file size
-	 * @param size
-	 * @return
-	 */
-	public static String readableFileSize( long size ) {
-		if ( size <= 0 ) return "0";
-		final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
-		int digitGroups = (int) ( Math.log10( size ) / Math.log10( 1024 ) );
-		return new DecimalFormat( "#,##0.#" ).format( size / Math.pow( 1024, digitGroups ) ) + " " + units[digitGroups];
+
+	private String processSensingMethod( int value ) {
+		switch ( value ) {
+			case 1:
+				return "Not defined";
+			case 2:
+				return "One-chip color area sensor";
+			case 3:
+				return "Two-chip color area sensor JEITA CP-3451 - 41";
+			case 4:
+				return "Three-chip color area sensor";
+			case 5:
+				return "Color sequential area sensor";
+			case 7:
+				return "Trilinear sensor";
+			case 8:
+				return "Color sequential linear sensor";
+			default:
+				return "Unknown";
+		}
+	}
+
+	private String processColorSpace( int value ) {
+		switch ( value ) {
+			case 1:
+				return "sRGB";
+			case 0xFFFF:
+				return "Uncalibrated";
+			default:
+				return "Unknown";
+		}
+	}
+
+	private String processExposureMode( int mode ) {
+		switch ( mode ) {
+			case 0:
+				return "Auto exposure";
+			case 1:
+				return "Manual exposure";
+			case 2:
+				return "Auto bracket";
+			default:
+				return "Unknown";
+		}
+	}
+
+	private String processExposureProgram( int program ) {
+		switch ( program ) {
+			case 1:
+				return "Manual control";
+			case 2:
+				return "Program normal";
+			case 3:
+				return "Aperture priority";
+			case 4:
+				return "Shutter priority";
+			case 5:
+				return "Program creative (slow program)";
+			case 6:
+				return "Program action(high-speed program)";
+			case 7:
+				return "Portrait mode";
+			case 8:
+				return "Landscape mode";
+			default:
+				return "Unknown";
+		}
+	}
+
+	private String processMeteringMode( int mode ) {
+		switch ( mode ) {
+			case 1:
+				return "Average";
+			case 2:
+				return "CenterWeightedAverage";
+			case 3:
+				return "Spot";
+			case 4:
+				return "MultiSpot";
+			case 5:
+				return "Pattern";
+			case 6:
+				return "Partial";
+			case 255:
+				return "Other";
+			default:
+				return "Unknown";
+		}
+	}
+
+	private String processLightSource( int value ) {
+		switch ( value ) {
+			case 0:
+				return "Auto";
+			case 1:
+				return "Daylight";
+			case 2:
+				return "Fluorescent";
+			case 3:
+				return "Tungsten (incandescent light)";
+			case 4:
+				return "Flash";
+			case 9:
+				return "Fine weather";
+			case 10:
+				return "Cloudy weather";
+			case 11:
+				return "Shade";
+			case 12:
+				return "Daylight fluorescent (D 5700 Ð 7100K)";
+			case 13:
+				return "Day white fluorescent (N 4600 Ð 5400K)";
+			case 14:
+				return "Cool white fluorescent (W 3900 Ð 4500K)";
+			case 15:
+				return "White fluorescent (WW 3200 Ð 3700K)";
+			case 17:
+				return "Standard light A";
+			case 18:
+				return "Standard light B";
+			case 19:
+				return "Standard light C";
+			case 20:
+				return "D55";
+			case 21:
+				return "D65";
+			case 22:
+				return "D75";
+			case 23:
+				return "D50";
+			case 24:
+				return "ISO studio tungsten";
+			case 255:
+				return "Other light source";
+			default:
+				return "Unknown";
+		}
+	}
+
+	private String processWhiteBalance( int value ) {
+		switch ( value ) {
+			case 0:
+				return "Auto";
+			case 1:
+				return "Manual";
+			default:
+				return "Unknown";
+		}
+	}
+
+	private String processSubjectDistanceRange( int value ) {
+		switch ( value ) {
+			case 1:
+				return "Macro";
+			case 2:
+				return "Close View";
+			case 3:
+				return "Distant View";
+			default:
+				return "Unknown";
+		}
+	}
+
+	private String processFlash( int flash ) {
+		switch ( flash ) {
+			case 0x0000:
+				return "Flash did not fire";
+			case 0x0001:
+				return "Flash fired";
+			case 0x0005:
+				return "Strobe return light not detected";
+			case 0x0007:
+				return "Strobe return light detected";
+			case 0x0009:
+				return "Flash fired, compulsory flash mode";
+			case 0x000D:
+				return "Flash fired, compulsory flash mode, return light not detected";
+			case 0x000F:
+				return "Flash fired, compulsory flash mode, return light detected";
+			case 0x0010:
+				return "Flash did not fire, compulsory flash mode";
+			case 0x0018:
+				return "Flash did not fire, auto mode";
+			case 0x0019:
+				return "Flash fired, auto mode";
+			case 0x001D:
+				return "Flash fired, auto mode, return light not detected";
+			case 0x001F:
+				return "Flash fired, auto mode, return light detected";
+			case 0x0020:
+				return "No flash function";
+			case 0x0041:
+				return "Flash fired, red-eye reduction mode";
+			case 0x0045:
+				return "Flash fired, red-eye reduction mode, return light not detected";
+			case 0x0047:
+				return "Flash fired, red-eye reduction mode, return light detected";
+			case 0x0049:
+				return "Flash fired, compulsory flash mode, red-eye reduction mode";
+			case 0x004D:
+				return "Flash fired, compulsory flash mode, red-eye reduction mode, return light not detected";
+			case 0x004F:
+				return "Flash fired, compulsory flash mode, red-eye reduction mode, return light detected";
+			case 0x0059:
+				return "Flash fired, auto mode, red-eye reduction mode";
+			case 0x005D:
+				return "Flash fired, auto mode, return light not detected, red-eye reduction mode";
+			case 0x005F:
+				return "Flash fired, auto mode, return light detected, red-eye reduction mode";
+			default:
+				return "Reserved";
+		}
+	}
+
+	private String parseProcess( int process ) {
+		switch ( process ) {
+			case 192:
+				return "Baseline";
+			case 193:
+				return "Extended sequential";
+			case 194:
+				return "Progressive";
+			case 195:
+				return "Lossless";
+			case 197:
+				return "Differential sequential";
+			case 198:
+				return "Differential progressive";
+			case 199:
+				return "Differential lossless";
+			case 201:
+				return "Extended sequential, arithmetic coding";
+			case 202:
+				return "Progressive, arithmetic coding";
+			case 203:
+				return "Lossless, arithmetic coding";
+			case 205:
+				return "Differential sequential, arithmetic coding";
+			case 206:
+				return "Differential progressive, arithmetic codng";
+			case 207:
+				return "Differential lossless, arithmetic coding";
+		}
+		return "Unknown";
+	}
+
+	public String humanReadableByteCount( long bytes, boolean si ) {
+		int unit = si ? 1000 : 1024;
+		if ( bytes < unit ) return bytes + " B";
+		int exp = (int) ( Math.log( bytes ) / Math.log( unit ) );
+		String pre = ( si ? "kMGTPE" : "KMGTPE" ).charAt( exp - 1 ) + ( si ? "" : "i" );
+		return String.format( "%.1f %sB", bytes / Math.pow( unit, exp ), pre );
 	}
 
 	public static final class Info {
@@ -553,20 +925,20 @@ public class ImageInfo implements Serializable {
 		private String value;
 		private Object rawData;
 
-		public Info( String t, String v ) {
+		public Info ( String t, String v ) {
 			tag = t;
 			value = v;
 		}
-		
-		public String getValue(){
+
+		public String getValue() {
 			return value;
 		}
-		
-		public String getTag(){
+
+		public String getTag() {
 			return tag;
 		}
-		
-		public Object getRawData(){
+
+		public Object getRawData() {
 			return rawData;
 		}
 	}
