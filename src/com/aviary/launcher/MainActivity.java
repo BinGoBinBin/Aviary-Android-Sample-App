@@ -56,7 +56,7 @@ import com.aviary.android.feather.library.MonitoredActivity;
 import com.aviary.android.feather.library.providers.FeatherContentProvider;
 import com.aviary.android.feather.library.providers.FeatherContentProvider.ActionsDbColumns.Action;
 import com.aviary.android.feather.library.utils.DecodeUtils;
-import com.aviary.android.feather.library.utils.ImageSizes;
+import com.aviary.android.feather.library.utils.ImageLoader.ImageSizes;
 import com.aviary.android.feather.library.utils.SystemUtils;
 
 public class MainActivity extends Activity {
