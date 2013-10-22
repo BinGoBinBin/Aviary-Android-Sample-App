@@ -1,4 +1,4 @@
-package com.aviary.launcher;
+package com.aviary.launcher3d;
 
 import it.sephiroth.android.library.media.ExifInterfaceExtended;
 
@@ -44,20 +44,21 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.aviary.android.feather.FeatherActivity;
+import com.aviary.android.feather.common.AviaryIntent;
+import com.aviary.android.feather.common.utils.IOUtils;
+import com.aviary.android.feather.common.utils.SDKUtils;
+import com.aviary.android.feather.common.utils.StringUtils;
+import com.aviary.android.feather.common.utils.SystemUtils;
 import com.aviary.android.feather.headless.AviaryExecutionException;
 import com.aviary.android.feather.headless.AviaryInitializationException;
 import com.aviary.android.feather.headless.filters.NativeFilterProxy;
 import com.aviary.android.feather.headless.moa.MoaHD;
-import com.aviary.android.feather.headless.utils.IOUtils;
 import com.aviary.android.feather.headless.utils.MegaPixels;
-import com.aviary.android.feather.headless.utils.StringUtils;
 import com.aviary.android.feather.library.Constants;
-import com.aviary.android.feather.library.MonitoredActivity;
 import com.aviary.android.feather.library.providers.FeatherContentProvider;
 import com.aviary.android.feather.library.providers.FeatherContentProvider.ActionsDbColumns.Action;
 import com.aviary.android.feather.library.utils.DecodeUtils;
 import com.aviary.android.feather.library.utils.ImageSizes;
-import com.aviary.android.feather.library.utils.SystemUtils;
 
 public class MainActivity extends Activity {
 	
@@ -75,6 +76,9 @@ public class MainActivity extends Activity {
 	private static final int ACTION_REQUEST_GALLERY = 99;
 	private static final int ACTION_REQUEST_FEATHER = 100;
 	private static final int EXTERNAL_STORAGE_UNAVAILABLE = 1;
+	
+	private static final String BILLING_API = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo2JhHCPbEVAqC2XC8IRL2fZjUHjnuK4a+nDHmkexxasO7rD6XQKGNihFEL3QGuQflfGs7uR87agtmhpJxlef+7bRyCXHcD7+tpax5a4Cat5GA8UJa1/nq50X2jrkZAG+agBw9C93LM0rpg8vdB9gE6Kd1TGjYWIl8iqtnTsjZoMrkeaA105WLtV64lr67GXsRai4Kd6gUl5YH/Z0rHsBlt/Q+/33XHbvoujE2F4YyBoROP5p4Fw7/QW+5EgJPMYyvZzOKMdzmTvLwjqwPPhD3W9IGr2zlfwgUKzphzUuuI1lmE3/pIH3DnQ42ifF/Fpe84o7Cj7V36eKkzY8Im9fbwIDAQAB";
+	private static final String API_SECRET = "M-CsRWLsSkqrvshKRQ5nXw";
 
 	public static final String LOG_TAG = "aviary-launcher";
 
@@ -149,11 +153,15 @@ public class MainActivity extends Activity {
 			}
 		} );
 
-		Toast.makeText( this, "launcher: " + getLibraryVersion() + ", sdk: " + FeatherActivity.SDK_VERSION, Toast.LENGTH_SHORT )
+		Toast.makeText( this, "launcher: " + getLibraryVersion() + ", sdk: " + SDKUtils.SDK_VERSION, Toast.LENGTH_SHORT )
 				.show();
 
 		mGalleryFolder = createFolders();
 		registerForContextMenu( mImageContainer );
+		
+		// pre-load the cds service
+		Intent cdsIntent = AviaryIntent.createCdsInitIntent( getBaseContext(), API_SECRET, BILLING_API );
+		startService( cdsIntent );
 		
 		new ApiKeyReader().execute();
 	}
@@ -194,7 +202,7 @@ public class MainActivity extends Activity {
 		mApiKey = value;
 		
 		if( null == value ) {
-			String message = MonitoredActivity.ApiKeyReader.MISSING_APIKEY_MESSAGE;
+			String message = SDKUtils.MISSING_APIKEY_MESSAGE;
 			new AlertDialog.Builder( this ).setTitle( "API-KEY Missing!" ).setMessage( message ).show();
 		}
 	}
@@ -599,24 +607,19 @@ public class MainActivity extends Activity {
 		// Optional
 		// Output format quality (jpeg only)
 		newIntent.putExtra( Constants.EXTRA_OUTPUT_QUALITY, 90 );
-
-		// === ENABLE/DISABLE IAP FOR EFFECTS ===
-		// Optional
-		// If you want to disable the external effects
-		// newIntent.putExtra( Constants.EXTRA_EFFECTS_ENABLE_EXTERNAL_PACKS, false );
 		
-		// === ENABLE/DISABLE IAP FOR FRAMES===
-		// Optional
-		// If you want to disable the external borders.
-		// Note that this will remove the frames tool.
-		// newIntent.putExtra( Constants.EXTRA_FRAMES_ENABLE_EXTERNAL_PACKS, false );		
-
-		// == ENABLE/DISABLE IAP FOR STICKERS ===
-		// Optional
-		// If you want to disable the external stickers. In this case you must have a folder called "stickers" in your assets folder
-		// containing a list of .png files, which will be your default stickers
-		// newIntent.putExtra( Constants.EXTRA_STICKERS_ENABLE_EXTERNAL_PACKS, false );
+		// newIntent.putExtra( Constants.EXTRA_WHITELABEL, true );
 		
+		newIntent.putExtra( Constants.EXTRA_IN_API_KEY_SECRET, API_SECRET );
+		
+		newIntent.putExtra( Constants.EXTRA_IN_BILLING_PUBLIC_KEY, BILLING_API );
+		
+		// don't show the external packs
+		newIntent.putExtra( Constants.EXTRA_IN_ENABLE_EXTERNAL_PACKS, true );
+		
+		// show only free stuff
+		newIntent.putExtra( Constants.EXTRA_IN_EXTERNAL_PACKS_FREE_ONLY, true );
+
 		// enable fast rendering preview
 		// newIntent.putExtra( Constants.EXTRA_EFFECTS_ENABLE_FAST_PREVIEW, true );
 
@@ -917,7 +920,7 @@ public class MainActivity extends Activity {
 				
 				// Premium partners only: 
 				// 	by default the maximum image size for hi-res is set to 13Mp ( is fixed to 3mp for the free version of the sdk )
-				moa.setMaxMegaPixels( MegaPixels.Mp30 );
+				moa.setMaxMegaPixels( MegaPixels.Mp15 );
 				
 				boolean loaded;
 				try {
@@ -1030,7 +1033,7 @@ public class MainActivity extends Activity {
 				// this should be changed because the editor already rotate the image
 				newExif.setAttribute( ExifInterfaceExtended.TAG_EXIF_ORIENTATION, "0" );
 				// let's update the software tag too
-				newExif.setAttribute( ExifInterfaceExtended.TAG_EXIF_SOFTWARE, "Aviary " + FeatherActivity.SDK_VERSION );
+				newExif.setAttribute( ExifInterfaceExtended.TAG_EXIF_SOFTWARE, "Aviary " + SDKUtils.SDK_VERSION );
 				// ...and the modification date
 				newExif.setAttribute( ExifInterfaceExtended.TAG_EXIF_DATETIME, ExifInterfaceExtended.formatDate( new Date() ) );
 				try {
@@ -1199,7 +1202,7 @@ public class MainActivity extends Activity {
 
 		@Override
 		protected String doInBackground( Void... params ) {
-			return MonitoredActivity.ApiKeyReader.getApiKey( getBaseContext() );
+			return SDKUtils.getApiKey( getBaseContext() );
 		}
 		
 		@Override

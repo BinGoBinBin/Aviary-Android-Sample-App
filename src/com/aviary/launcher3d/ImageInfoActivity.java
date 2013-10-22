@@ -1,4 +1,4 @@
-package com.aviary.launcher;
+package com.aviary.launcher3d;
 
 import java.util.List;
 import android.app.ListActivity;
@@ -19,7 +19,8 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.TextView;
-import com.aviary.launcher.ImageInfo.Info;
+
+import com.aviary.launcher3d.ImageInfo.Info;
 
 public class ImageInfoActivity extends ListActivity implements OnItemClickListener {
 

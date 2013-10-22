@@ -1,4 +1,4 @@
-package com.aviary.launcher;
+package com.aviary.launcher3d;
 
 import android.app.Application;
 

@@ -1,4 +1,4 @@
-package com.aviary.launcher;
+package com.aviary.launcher3d;
 
 import it.sephiroth.android.library.media.ExifInterfaceExtended;
 
@@ -19,9 +19,9 @@ import android.net.Uri;
 import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Images.ImageColumns;
 
+import com.aviary.android.feather.common.utils.IOUtils;
+import com.aviary.android.feather.common.utils.StringUtils;
 import com.aviary.android.feather.headless.utils.CameraUtils;
-import com.aviary.android.feather.headless.utils.IOUtils;
-import com.aviary.android.feather.headless.utils.StringUtils;
 
 public class ImageInfo implements Serializable {
 
