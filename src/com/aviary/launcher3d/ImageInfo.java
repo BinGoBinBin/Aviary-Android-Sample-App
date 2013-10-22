@@ -9,6 +9,7 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import android.content.ContentResolver;
 import android.content.Context;
@@ -33,7 +34,6 @@ public class ImageInfo implements Serializable {
 	private static final int INDEX_DATA = 8;
 	private static final int INDEX_ORIENTATION = 9;
 	private static final int INDEX_SIZE_ID = 11;
-	private static final int INDEX_BUCKET_TITLE = 12;
 
 	public static final String[] PROJECTION = { ImageColumns._ID, // 0
 			ImageColumns.TITLE, // 1
@@ -132,8 +132,6 @@ public class ImageInfo implements Serializable {
 
 	private String longitudeString;
 
-	private String bucketDisplayName;
-
 	public static final float INVALID_LATLNG = 0f;
 
 	public ImageInfo () {}
@@ -177,7 +175,6 @@ public class ImageInfo implements Serializable {
 		filePath = cursor.getString( INDEX_DATA );
 		rotation = cursor.getInt( INDEX_ORIENTATION );
 		fileSize = cursor.getLong( INDEX_SIZE_ID );
-		bucketDisplayName = cursor.getString( INDEX_BUCKET_TITLE );
 	}
 
 	private void onLoadExifData( String path ) {
@@ -916,7 +913,7 @@ public class ImageInfo implements Serializable {
 		if ( bytes < unit ) return bytes + " B";
 		int exp = (int) ( Math.log( bytes ) / Math.log( unit ) );
 		String pre = ( si ? "kMGTPE" : "KMGTPE" ).charAt( exp - 1 ) + ( si ? "" : "i" );
-		return String.format( "%.1f %sB", bytes / Math.pow( unit, exp ), pre );
+		return String.format( Locale.US, "%.1f %sB", bytes / Math.pow( unit, exp ), pre );
 	}
 
 	public static final class Info {
